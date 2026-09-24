@@ -233,6 +233,30 @@
             </select>
           </div>
 
+          <!-- Year Filter -->
+          <div class="flex items-center gap-1.5">
+            <span class="text-slate-600 font-semibold">연도:</span>
+            <select id="year-select" onchange="handleSearch()" class="bg-white border border-slate-300 text-slate-700 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-indigo-500 font-medium">
+              <option value="ALL">전체 연도</option>
+              <option value="2027">2027학년도</option>
+              <option value="2026">2026학년도</option>
+              <option value="2025">2025학년도</option>
+              <option value="2024">2024학년도 이하</option>
+            </select>
+          </div>
+
+          <!-- Sort Criteria -->
+          <div class="flex items-center gap-1.5">
+            <span class="text-slate-600 font-semibold">정렬:</span>
+            <select id="sort-select" onchange="handleSearch()" class="bg-white border border-slate-300 text-slate-700 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-indigo-500 font-medium">
+              <option value="YEAR_DESC">연도 최신순 (2027 → 2024)</option>
+              <option value="YEAR_ASC">연도 과거순 (2024 → 2027)</option>
+              <option value="NAME_ASC">이름 가나다순</option>
+              <option value="SIZE_DESC">용량 큰순</option>
+              <option value="SIZE_ASC">용량 작은순</option>
+            </select>
+          </div>
+
           <div class="ml-auto text-xs text-slate-500 font-medium">
             조건 검색 결과: <strong id="stat-filtered" class="text-indigo-600 font-black text-sm">0</strong>개
           </div>
@@ -612,6 +636,8 @@
       const typeFilter = document.getElementById('type-select').value;
       const gubunFilter = document.getElementById('gubun-select').value;
       const brandFilter = document.getElementById('brand-select').value;
+      const yearFilter = document.getElementById('year-select').value;
+      const sortOrder = document.getElementById('sort-select').value;
 
       filteredList = CATALOG.filter(item => {
         // Category check
@@ -619,6 +645,15 @@
 
         // Sub-subject check
         if (currentSubSubject !== 'ALL' && item.ds !== currentSubSubject) return false;
+
+        // Year filter check
+        if (yearFilter !== 'ALL') {
+          if (yearFilter === '2024') {
+            if (parseInt(item.y) > 2024) return false;
+          } else if (item.y !== yearFilter) {
+            return false;
+          }
+        }
 
         // Type check
         if (typeFilter !== 'ALL' && item.t !== typeFilter) return false;
@@ -635,11 +670,29 @@
         // Text query check
         if (query) {
           const terms = query.split(/\s+/);
-          const fullText = (item.n + ' ' + item.ds + ' ' + item.b + ' ' + item.sr + ' ' + item.r + ' ' + item.g + ' ' + item.f).toLowerCase();
+          const fullText = (item.n + ' ' + item.ds + ' ' + item.b + ' ' + item.sr + ' ' + item.r + ' ' + item.g + ' ' + item.f + ' ' + item.y).toLowerCase();
           return terms.every(t => fullText.includes(t));
         }
 
         return true;
+      });
+
+      // Sorting
+      filteredList.sort((a, b) => {
+        if (sortOrder === 'YEAR_DESC') {
+          if (b.y !== a.y) return b.y.localeCompare(a.y);
+          return a.n.localeCompare(b.n, 'ko');
+        } else if (sortOrder === 'YEAR_ASC') {
+          if (a.y !== b.y) return a.y.localeCompare(b.y);
+          return a.n.localeCompare(b.n, 'ko');
+        } else if (sortOrder === 'NAME_ASC') {
+          return a.n.localeCompare(b.n, 'ko');
+        } else if (sortOrder === 'SIZE_DESC') {
+          return b.s - a.s;
+        } else if (sortOrder === 'SIZE_ASC') {
+          return a.s - b.s;
+        }
+        return 0;
       });
 
       currentPage = 1;
@@ -693,6 +746,7 @@
             <div class="flex flex-col gap-2">
               <!-- Badges Row -->
               <div class="flex items-center gap-1.5 flex-wrap text-[11px] font-semibold">
+                <span class="px-2 py-0.5 rounded-md bg-slate-800 text-white font-black text-[10px] shadow-sm">${item.y}</span>
                 <span class="px-2.5 py-0.5 rounded-md border font-black shadow-sm ${subjBadgeStyle}">
                   ${item.ds}
                 </span>
