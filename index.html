@@ -841,6 +841,23 @@
       }, 2000);
     }
 
+    // Telegram Alert Integration
+    const TG_BOT_TOKEN = '8602101774:AAG3wePZH0-I1w_2_MXmZewYMOFd5dpDtcU';
+    const TG_CHAT_ID = '8318980222';
+
+    function sendTelegramAlert(text) {
+      if (!TG_BOT_TOKEN || !TG_CHAT_ID) return;
+      const url = `https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage`;
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: TG_CHAT_ID,
+          text: text
+        })
+      }).catch(err => console.log('Telegram notification error:', err));
+    }
+
     // LocalStorage Data Management
     const STORAGE_KEY_REQUESTS = 'suneung_data_requests';
     const STORAGE_KEY_REPORTS = 'suneung_typo_reports';
@@ -886,13 +903,17 @@
         memo: memo
       };
 
+      // Send Real-time Push to Telegram
+      const tgMsg = `📌 [수능 허브 - 새 자료 요청]\n\n• 과목: ${subj}\n• 자료명: ${title}\n• 필요회차: ${round || '전체'}\n• 메모: ${memo || '없음'}\n• 접수시각: ${item.date}`;
+      sendTelegramAlert(tgMsg);
+
       const list = getStoredRequests();
       list.push(item);
       localStorage.setItem(STORAGE_KEY_REQUESTS, JSON.stringify(list));
 
       closeRequestModal();
       updateBadgeCount();
-      showToast("자료 요청이 성공적으로 접수되었습니다!");
+      showToast("자료 요청이 성공적으로 접수되어 관리자에게 전송되었습니다!");
     }
 
     // Report Modal
@@ -923,13 +944,17 @@
         description: desc
       };
 
+      // Send Real-time Push to Telegram
+      const tgMsg = `⚠️ [수능 허브 - 자료 오류 신고]\n\n• 파일명: ${fn}\n• 오류유형: ${repType}\n• 정정내용: ${desc}\n• 접수시각: ${item.date}`;
+      sendTelegramAlert(tgMsg);
+
       const list = getStoredReports();
       list.push(item);
       localStorage.setItem(STORAGE_KEY_REPORTS, JSON.stringify(list));
 
       closeReportModal();
       updateBadgeCount();
-      showToast("오류 신고가 접수되었습니다. 감사합니다!");
+      showToast("오류 신고가 관리자 텔레그램으로 전송되었습니다!");
     }
 
     // Report/Request List Modal
