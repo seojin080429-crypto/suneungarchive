@@ -788,10 +788,9 @@
 
       let html = '';
       pageItems.forEach(item => {
-        // Google Drive preview URL (for clean direct PDF embed)
-        const previewUrl = item.id ? `https://drive.google.com/file/d/${item.id}/preview` : `file:///${encodeURI(DRIVE_PREFIX + item.p)}`;
-        const webViewUrl = item.id ? `https://drive.google.com/file/d/${item.id}/view?usp=sharing` : previewUrl;
-        const downloadUrl = item.id ? `https://drive.google.com/uc?export=download&confirm=t&id=${item.id}` : previewUrl;
+        // Google Drive standard sharing URL (compatible across mobile app, iOS Safari, Android, PC)
+        const driveViewUrl = item.id ? `https://drive.google.com/file/d/${item.id}/view?usp=sharing` : '';
+        const driveDownloadUrl = item.id ? `https://drive.google.com/uc?export=download&confirm=t&id=${item.id}` : '';
 
         html += `
           <div class="bg-white border border-hairline-soft hover:border-ink rounded-container p-5 transition-colors flex flex-col justify-between gap-4 group">
@@ -820,7 +819,7 @@
               </div>
 
               <!-- Large Bold Filename (Weight 650) -->
-              <a href="${previewUrl}" target="_blank" rel="noopener noreferrer" class="font-bold text-sm md:text-[15px] text-ink leading-snug break-all select-all hover:underline cursor-pointer tracking-tight pt-0.5">
+              <a href="javascript:void(0)" onclick="openItemFile('${item.id}', '${item.n.replace(/'/g, "\\'")}')" class="font-bold text-sm md:text-[15px] text-ink leading-snug break-all select-all hover:underline cursor-pointer tracking-tight pt-0.5">
                 ${highlightText(item.n, currentSearchTerms)}
               </a>
 
@@ -835,21 +834,21 @@
             <!-- Action Buttons (Mobbin Stadium Pill Hierarchy with 44px Mobile Touch Targets) -->
             <div class="flex items-center gap-1.5 sm:gap-2 pt-3 border-t border-hairline-soft text-xs">
               <!-- Primary CTA: Pure Ink Stadium Pill -->
-              <a href="${previewUrl}" target="_blank" rel="noopener noreferrer" class="flex-1 text-center py-2.5 sm:py-2 px-3 sm:px-4 rounded-pill bg-ink hover:bg-[#262626] active:scale-95 text-white font-semibold transition-all flex items-center justify-center gap-1.5" title="클린 뷰어로 PDF 열기">
+              <button onclick="openItemFile('${item.id}', '${item.n.replace(/'/g, "\\'")}')" class="flex-1 text-center py-2.5 sm:py-2 px-3 sm:px-4 rounded-pill bg-ink hover:bg-[#262626] active:scale-95 text-white font-semibold transition-all flex items-center justify-center gap-1.5" title="구글 드라이브로 파일 열기">
                 <span>열기 (PDF)</span>
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
-              </a>
+              </button>
 
               <!-- Secondary CTA: Outline Stadium Pill -->
-              <a href="${downloadUrl}" target="_blank" rel="noopener noreferrer" class="py-2.5 sm:py-2 px-3 sm:px-3.5 rounded-pill bg-white hover:bg-canvas-soft active:scale-95 text-ink border border-hairline font-semibold transition-all" title="파일 직접 다운로드">
+              <button onclick="downloadItemFile('${item.id}', '${item.n.replace(/'/g, "\\'")}')" class="py-2.5 sm:py-2 px-3 sm:px-3.5 rounded-pill bg-white hover:bg-canvas-soft active:scale-95 text-ink border border-hairline font-semibold transition-all" title="파일 직접 다운로드">
                 다운로드
-              </a>
+              </button>
 
               <!-- Icon Pills: Web View, Share, Report -->
-              <a href="${webViewUrl}" target="_blank" rel="noopener noreferrer" class="w-9 h-9 sm:w-8 sm:h-8 rounded-pill bg-canvas-soft hover:bg-[#e4e4e4] active:scale-90 text-text-muted hover:text-ink flex items-center justify-center text-xs transition-all flex-shrink-0" title="Google 드라이브 웹에서 보기">
+              <button onclick="openItemFile('${item.id}', '${item.n.replace(/'/g, "\\'")}')" class="w-9 h-9 sm:w-8 sm:h-8 rounded-pill bg-canvas-soft hover:bg-[#e4e4e4] active:scale-90 text-text-muted hover:text-ink flex items-center justify-center text-xs transition-all flex-shrink-0" title="Google 드라이브 웹에서 보기">
                 ↗
-              </a>
-              <button onclick="copyShareLink('${previewUrl}')" class="w-9 h-9 sm:w-8 sm:h-8 rounded-pill bg-canvas-soft hover:bg-[#e4e4e4] active:scale-90 text-text-muted hover:text-ink flex items-center justify-center text-xs transition-all flex-shrink-0" title="공유 링크 복사">
+              </button>
+              <button onclick="copyShareLink('${driveViewUrl}')" class="w-9 h-9 sm:w-8 sm:h-8 rounded-pill bg-canvas-soft hover:bg-[#e4e4e4] active:scale-90 text-text-muted hover:text-ink flex items-center justify-center text-xs transition-all flex-shrink-0" title="공유 링크 복사">
                 🔗
               </button>
               <button onclick="openReportModal('${item.n.replace(/'/g, "\\'")}')" class="w-9 h-9 sm:w-8 sm:h-8 rounded-pill bg-canvas-soft hover:bg-[#fee2e2] active:scale-90 text-text-muted hover:text-[#b91c1c] flex items-center justify-center text-xs transition-all flex-shrink-0" title="오기입 / 오류 신고">
@@ -892,7 +891,36 @@
       }
     }
 
+    function openItemFile(itemId, fileName) {
+      if (!itemId) {
+        alert(`[동기화 안내]
+'${fileName}'
+
+해당 자료는 현재 구글 드라이브와 동기화 진행 중입니다.
+동기화가 완료되면 바로 열람하실 수 있습니다.`);
+        return;
+      }
+      const url = `https://drive.google.com/file/d/${itemId}/view?usp=sharing`;
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+
+    function downloadItemFile(itemId, fileName) {
+      if (!itemId) {
+        alert(`[동기화 안내]
+'${fileName}'
+
+해당 자료는 현재 구글 드라이브와 동기화 진행 중입니다.`);
+        return;
+      }
+      const url = `https://drive.google.com/uc?export=download&confirm=t&id=${itemId}`;
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+
     function copyShareLink(url) {
+      if (!url) {
+        alert("해당 자료는 현재 구글 드라이브 동기화 진행 중으로 링크가 아직 생성되지 않았습니다.");
+        return;
+      }
       navigator.clipboard.writeText(url).then(() => {
         showToast("공유 링크가 복사되었습니다.");
       }).catch(() => {
