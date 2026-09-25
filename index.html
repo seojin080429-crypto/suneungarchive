@@ -152,7 +152,7 @@
         <input 
           type="text" 
           id="search-input" 
-          placeholder="과목, 브랜드(시대인재, 강대K, OZ 등), 회차, 문항 구분 검색..." 
+          placeholder="다중 검색 가능 (쉼표나 띄어쓰기 구분, 예: 이해원, 미적분 / 시대인재 생명)..." 
           class="w-full pl-11 pr-24 py-3.5 bg-field hover:bg-[#eaeaea] focus:bg-white text-ink placeholder-text-faint rounded-pill text-sm focus:outline-none focus:ring-2 focus:ring-ink transition-all border border-transparent"
           oninput="handleSearch()"
         />
@@ -501,6 +501,7 @@
     let currentCategory = 'ALL';
     let currentSubSubject = 'ALL';
     let currentSearchText = '';
+    let currentSearchTerms = [];
     let currentPage = 1;
     const PAGE_SIZE = 40;
     let filteredList = [...CATALOG];
@@ -671,6 +672,9 @@
       currentSearchText = query;
       document.getElementById('clear-btn').classList.toggle('hidden', query.length === 0);
 
+      // Split terms by whitespace or comma (e.g. "이해원,미적분" or "이해원, 미적분" or "이해원 미적분")
+      currentSearchTerms = query.split(/[\s,]+/).map(t => t.trim()).filter(t => t.length > 0);
+
       const typeFilter = document.getElementById('type-select').value;
       const gubunFilter = document.getElementById('gubun-select').value;
       const brandFilter = document.getElementById('brand-select').value;
@@ -705,18 +709,30 @@
         // Brand check
         if (brandFilter !== 'ALL' && !item.b.includes(brandFilter)) return false;
 
-        // Text query check
-        if (query) {
-          const terms = query.split(/\s+/);
+        // Multi-keyword check & match count scoring
+        if (currentSearchTerms.length > 0) {
           const fullText = (item.n + ' ' + item.ds + ' ' + item.b + ' ' + item.sr + ' ' + item.r + ' ' + item.g + ' ' + item.f + ' ' + item.y).toLowerCase();
-          return terms.every(t => fullText.includes(t));
+          let matchCount = 0;
+          for (const term of currentSearchTerms) {
+            if (fullText.includes(term)) {
+              matchCount++;
+            }
+          }
+          if (matchCount === 0) return false;
+          item._matchCount = matchCount;
+        } else {
+          item._matchCount = 0;
         }
 
         return true;
       });
 
-      // Sorting (Natural Alphanumeric / 회차별 자연 정렬)
+      // Sorting (Multi-keyword relevance ranking: items matching more keywords come first)
       filteredList.sort((a, b) => {
+        if (currentSearchTerms.length > 1 && (b._matchCount || 0) !== (a._matchCount || 0)) {
+          return (b._matchCount || 0) - (a._matchCount || 0);
+        }
+
         if (sortOrder === 'YEAR_DESC') {
           if (b.y !== a.y) return b.y.localeCompare(a.y, undefined, { numeric: true });
           return a.n.localeCompare(b.n, 'ko', { numeric: true, sensitivity: 'base' });
@@ -796,11 +812,16 @@
                 ${item.r ? `<span class="px-2.5 py-0.5 rounded-pill bg-canvas-soft text-ink font-semibold text-[11px]">${item.r}</span>` : ''}
                 <span class="px-2.5 py-0.5 rounded-pill bg-field text-text-muted text-[10px] font-medium">${item.t}</span>
                 <span class="px-2.5 py-0.5 rounded-pill bg-canvas-soft border border-hairline text-ink text-[10px] font-bold ml-auto">${item.g}</span>
+                ${currentSearchTerms.length > 1 ? (
+                  item._matchCount === currentSearchTerms.length
+                    ? `<span class="px-2.5 py-0.5 rounded-pill bg-ink text-white font-bold text-[10px] flex items-center gap-1">✓ 전체일치 (${item._matchCount}/${currentSearchTerms.length})</span>`
+                    : `<span class="px-2.5 py-0.5 rounded-pill bg-canvas-soft border border-hairline text-text-muted font-medium text-[10px]">${item._matchCount}/${currentSearchTerms.length} 일치</span>`
+                ) : ''}
               </div>
 
               <!-- Large Bold Filename (Weight 650) -->
               <a href="${previewUrl}" target="_blank" rel="noopener noreferrer" class="font-bold text-sm md:text-[15px] text-ink leading-snug break-all select-all hover:underline cursor-pointer tracking-tight pt-0.5">
-                ${highlightText(item.n, currentSearchText)}
+                ${highlightText(item.n, currentSearchTerms)}
               </a>
 
               <!-- Folder Path & Size (SF Mono style) -->
@@ -843,11 +864,11 @@
       container.innerHTML = html;
     }
 
-    function highlightText(text, query) {
-      if (!query) return text;
-      const terms = query.split(/\s+/).filter(t => t.length > 0);
+    function highlightText(text, terms) {
+      if (!terms || terms.length === 0) return text;
       let res = text;
       terms.forEach(term => {
+        if (!term) return;
         const regex = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
         res = res.replace(regex, '<span class="highlight">$1</span>');
       });
