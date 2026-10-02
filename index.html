@@ -985,14 +985,16 @@
     }
 
     function highlightText(text, terms) {
+      if (!text) return '';
       if (!terms || terms.length === 0) return text;
-      let res = text;
-      terms.forEach(term => {
-        if (!term) return;
-        const regex = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-        res = res.replace(regex, '<span class="highlight">$1</span>');
-      });
-      return res;
+      const validTerms = terms
+        .map(t => t.trim())
+        .filter(t => t.length > 0)
+        .map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+      if (validTerms.length === 0) return text;
+      validTerms.sort((a, b) => b.length - a.length);
+      const combinedRegex = new RegExp(`(${validTerms.join('|')})`, 'gi');
+      return text.replace(combinedRegex, '<span class="highlight">$1</span>');
     }
 
     function prevPage() {
