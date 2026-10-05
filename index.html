@@ -166,8 +166,12 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
           </div>
           <input 
-            type="text" 
+            type="search" 
             id="search-input" 
+            enterkeyhint="search"
+            autocorrect="off"
+            autocapitalize="off"
+            spellcheck="false"
             placeholder="다중 검색 가능 (쉼표나 띄어쓰기 구분, 예: 이해원, 미적분 / 시대인재 생명)..." 
             class="w-full pl-11 pr-24 py-3.5 bg-field hover:bg-[#eaeaea] focus:bg-white text-ink placeholder-text-faint rounded-pill text-sm focus:outline-none focus:ring-2 focus:ring-ink transition-all border border-transparent"
             oninput="handleSearch()"
@@ -1330,9 +1334,44 @@
       });
     }
 
+    // Mobile Touch & Scroll Keyboard Dismissal Logic
+    function setupMobileKeyboardDismissal() {
+      const searchInput = document.getElementById('search-input');
+      if (!searchInput) return;
+
+      // 1) Enter / Search key press on soft keyboard
+      searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          searchInput.blur();
+        }
+      });
+
+      // 2) Touch/Click outside input or clear button
+      const handleOutsideTouch = (e) => {
+        if (document.activeElement === searchInput) {
+          if (!searchInput.contains(e.target) && !e.target.closest('#clear-btn')) {
+            searchInput.blur();
+          }
+        }
+      };
+
+      document.addEventListener('touchstart', handleOutsideTouch, { passive: true });
+      document.addEventListener('click', handleOutsideTouch, { passive: true });
+
+      // 3) Scroll down while searching -> dismiss keyboard to free up viewport
+      let lastY = window.scrollY;
+      window.addEventListener('scroll', () => {
+        if (document.activeElement === searchInput && Math.abs(window.scrollY - lastY) > 15) {
+          searchInput.blur();
+        }
+        lastY = window.scrollY;
+      }, { passive: true });
+    }
+
     // Init
     handleSearch();
     updateBadgeCount();
+    setupMobileKeyboardDismissal();
   </script>
 </body>
 </html>
