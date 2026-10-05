@@ -159,21 +159,37 @@
     <!-- SEARCH & CONTROLS CONTAINER (rounded-container = 24px) -->
     <div class="bg-white border border-hairline rounded-container p-5 sm:p-6 flex flex-col gap-5">
       
-      <!-- Borderless Search Bar (Mobbin Field Style) -->
-      <div class="relative w-full">
-        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-text-muted">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+      <!-- Borderless Search Bar (Mobbin Field Style) with Refresh & Reset Buttons -->
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full">
+        <div class="relative flex-1">
+          <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-text-muted">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+          </div>
+          <input 
+            type="text" 
+            id="search-input" 
+            placeholder="다중 검색 가능 (쉼표나 띄어쓰기 구분, 예: 이해원, 미적분 / 시대인재 생명)..." 
+            class="w-full pl-11 pr-24 py-3.5 bg-field hover:bg-[#eaeaea] focus:bg-white text-ink placeholder-text-faint rounded-pill text-sm focus:outline-none focus:ring-2 focus:ring-ink transition-all border border-transparent"
+            oninput="handleSearch()"
+          />
+          <button id="clear-btn" onclick="clearSearch()" class="hidden absolute inset-y-0 right-3 my-auto px-3 py-1 text-xs text-text-muted hover:text-ink bg-canvas-soft hover:bg-[#e4e4e4] border border-hairline rounded-pill font-medium transition-colors">
+            지우기
+          </button>
         </div>
-        <input 
-          type="text" 
-          id="search-input" 
-          placeholder="다중 검색 가능 (쉼표나 띄어쓰기 구분, 예: 이해원, 미적분 / 시대인재 생명)..." 
-          class="w-full pl-11 pr-24 py-3.5 bg-field hover:bg-[#eaeaea] focus:bg-white text-ink placeholder-text-faint rounded-pill text-sm focus:outline-none focus:ring-2 focus:ring-ink transition-all border border-transparent"
-          oninput="handleSearch()"
-        />
-        <button id="clear-btn" onclick="clearSearch()" class="hidden absolute inset-y-0 right-3 my-auto px-3 py-1 text-xs text-text-muted hover:text-ink bg-canvas-soft hover:bg-[#e4e4e4] border border-hairline rounded-pill font-medium transition-colors">
-          지우기
-        </button>
+
+        <div class="flex items-center gap-2 flex-shrink-0 justify-end">
+          <!-- 🔄 새로고침 버튼 (Refresh Button) -->
+          <button onclick="refreshDashboard()" class="px-3.5 py-3 bg-canvas-soft hover:bg-[#eaeaea] active:scale-95 text-ink border border-hairline rounded-pill text-xs font-semibold flex items-center justify-center gap-1.5 transition-all" title="대시보드 새로고침 (웹페이지 다시 읽기)">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+            <span>새로고침</span>
+          </button>
+
+          <!-- 🧹 검색 초기화 버튼 (Reset All Filters Button) -->
+          <button onclick="resetAllSearchFilters()" class="px-3.5 py-3 bg-canvas-soft hover:bg-[#eaeaea] active:scale-95 text-ink border border-hairline rounded-pill text-xs font-semibold flex items-center justify-center gap-1.5 transition-all" title="모든 검색어 및 필터 초기화">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+            <span>검색 초기화</span>
+          </button>
+        </div>
       </div>
 
       <!-- Category Filter Pills (Mobile Horizontal Swipe Carousel / Desktop Wrap) -->
@@ -872,6 +888,24 @@
     function clearSearch() {
       document.getElementById('search-input').value = '';
       handleSearch();
+    }
+
+    function refreshDashboard() {
+      showToast("대시보드를 새로고침합니다.");
+      setTimeout(() => {
+        window.location.reload();
+      }, 300);
+    }
+
+    function resetAllSearchFilters() {
+      document.getElementById('search-input').value = '';
+      document.getElementById('type-select').value = 'ALL';
+      document.getElementById('gubun-select').value = 'ALL';
+      document.getElementById('brand-select').value = 'ALL';
+      document.getElementById('year-select').value = 'ALL';
+      document.getElementById('sort-select').value = 'MTIME_DESC';
+      selectCategoryAll();
+      showToast("모든 검색어 및 필터가 초기화되었습니다.");
     }
 
     // Render Function (Mobbin Gallery Cards)
