@@ -891,9 +891,14 @@
     }
 
     function refreshDashboard() {
-      showToast("대시보드를 새로고침합니다.");
+      showToast("사이트를 최신 상태로 새로고침합니다...");
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+          registrations.forEach(reg => reg.update());
+        });
+      }
       setTimeout(() => {
-        window.location.reload();
+        window.location.href = window.location.origin + window.location.pathname + '?t=' + Date.now();
       }, 300);
     }
 
