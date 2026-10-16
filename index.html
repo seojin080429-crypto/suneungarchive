@@ -522,6 +522,14 @@
 
       <div class="flex flex-col gap-3 text-xs">
         <div>
+          <label class="block font-medium text-text-muted mb-1">
+            요청자 이름 <span class="text-accent">*</span>
+            <span class="text-[11px] font-medium text-accent block sm:inline mt-0.5 sm:mt-0 sm:ml-1">(본명으로 적어줘야 자료 추가했을때 개발자가 알릴 수 있습니다)</span>
+          </label>
+          <input type="text" id="req-name" placeholder="본명을 입력해주세요 (본명으로 적어줘야 자료 추가했을때 개발자가 알릴 수 있습니다)" class="w-full bg-field border border-transparent rounded-tile px-3.5 py-2.5 text-xs text-ink placeholder-text-faint focus:ring-2 focus:ring-ink focus:bg-white outline-none" />
+        </div>
+
+        <div>
           <label class="block font-medium text-text-muted mb-1">과목</label>
           <select id="req-subject" class="w-full bg-field border border-transparent rounded-tile px-3.5 py-2.5 text-xs text-ink focus:ring-2 focus:ring-ink focus:bg-white outline-none">
             <option value="국어">국어</option>
@@ -1277,6 +1285,13 @@
 
     // Request Modal
     function openRequestModal(defaultTitle = '') {
+      try {
+        const savedName = localStorage.getItem('suneung_requester_name') || '';
+        const nameEl = document.getElementById('req-name');
+        if (nameEl && savedName) {
+          nameEl.value = savedName;
+        }
+      } catch(e) {}
       document.getElementById('req-title').value = defaultTitle;
       document.getElementById('modal-request').classList.remove('hidden');
       document.body.classList.add('overflow-hidden');
@@ -1286,27 +1301,40 @@
       document.body.classList.remove('overflow-hidden');
     }
     function submitRequest() {
+      const name = (document.getElementById('req-name')?.value || '').trim();
       const subj = document.getElementById('req-subject').value;
       const title = document.getElementById('req-title').value.trim();
       const round = document.getElementById('req-round').value.trim();
       const memo = document.getElementById('req-memo').value.trim();
 
-      if (!title) {
-        alert("자료명을 입력해주세요!");
+      if (!name) {
+        alert("요청자 이름을 입력해주세요!\n(본명으로 적어줘야 자료 추가했을때 개발자가 알릴 수 있습니다)");
+        document.getElementById('req-name')?.focus();
         return;
       }
+
+      if (!title) {
+        alert("자료명을 입력해주세요!");
+        document.getElementById('req-title')?.focus();
+        return;
+      }
+
+      try {
+        localStorage.setItem('suneung_requester_name', name);
+      } catch(e) {}
 
       const item = {
         id: 'REQ_' + Date.now(),
         type: '자료요청',
         date: new Date().toLocaleString(),
+        name: name,
         subject: subj,
         title: title,
         round: round,
         memo: memo
       };
 
-      const tgMsg = `📌 [수능 허브 - 새 자료 요청]\n\n• 과목: ${subj}\n• 자료명: ${title}\n• 필요회차: ${round || '전체'}\n• 메모: ${memo || '없음'}\n• 접수시각: ${item.date}`;
+      const tgMsg = `📌 [수능 허브 - 새 자료 요청]\n\n• 요청자: ${name}\n• 과목: ${subj}\n• 자료명: ${title}\n• 필요회차: ${round || '전체'}\n• 메모: ${memo || '없음'}\n• 접수시각: ${item.date}`;
       sendTelegramAlert(tgMsg);
 
       const list = getStoredRequests();
@@ -1374,7 +1402,7 @@
           html += `
             <div class="bg-canvas-soft border border-hairline rounded-tile p-3.5 flex flex-col gap-1.5 text-xs">
               <div class="flex items-center justify-between">
-                <span class="px-2.5 py-0.5 rounded-pill bg-ink text-white font-semibold text-[10px]">📌 [요청] ${r.subject}</span>
+                <span class="px-2.5 py-0.5 rounded-pill bg-ink text-white font-semibold text-[10px]">📌 [요청] ${r.subject} ${r.name ? `| ${r.name}` : ''}</span>
                 <span class="text-text-muted text-[10px]">${r.date}</span>
               </div>
               <div class="font-bold text-ink text-sm">${r.title} ${r.round ? `(${r.round})` : ''}</div>
@@ -1423,7 +1451,7 @@
       let text = "=== 2027 수능자료 대시보드 접수 내역 ===\n\n";
       text += `[자료 요청 내역 (${reqs.length}건)]\n`;
       reqs.forEach((r, i) => {
-        text += `${i+1}. [${r.subject}] ${r.title} (${r.round}) - ${r.memo} (${r.date})\n`;
+        text += `${i+1}. [${r.subject}] ${r.title} (${r.round || '전체'}) - 요청자: ${r.name || '미기재'} - ${r.memo || '없음'} (${r.date})\n`;
       });
       text += `\n[오류 신고 내역 (${reps.length}건)]\n`;
       reps.forEach((r, i) => {
