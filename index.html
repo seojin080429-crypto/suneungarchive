@@ -189,11 +189,19 @@
           로그인
         </button>
 
-        <div class="pt-3 border-t border-hairline flex items-center justify-between text-[11px] text-text-muted">
-          <span>계정이 없으신가요?</span>
-          <button onclick="openAccountRequestModal()" class="font-bold text-ink hover:underline">
-            계정 생성 요청 →
-          </button>
+        <div class="pt-3 border-t border-hairline flex flex-col gap-2 text-[11px] text-text-muted">
+          <div class="flex items-center justify-between">
+            <span>계정이 없으신가요?</span>
+            <button onclick="openAccountRequestModal()" class="font-bold text-ink hover:underline">
+              계정 생성 신청 & 소통 →
+            </button>
+          </div>
+          <div class="flex items-center justify-between text-[10px]">
+            <span>이미 신청하셨나요?</span>
+            <button onclick="openAccountStatusCheckModal()" class="font-semibold text-accent hover:underline">
+              신청 현황 & 대화방 확인 →
+            </button>
+          </div>
         </div>
       </div>
 
@@ -588,34 +596,105 @@
   <!-- MODALS (Mobbin Dialogs: Zero Glow, Crisp Hairline, Pill CTA) -->
   <!-- ======================================================== -->
 
-  <!-- MODAL: Account Creation Request -->
-  <div id="modal-account-request" class="fixed inset-0 z-50 bg-ink/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
-    <div class="bg-white border border-hairline rounded-container max-w-sm w-full p-6 flex flex-col gap-4 text-ink">
-      <div class="flex items-center justify-between pb-3 border-b border-hairline-soft">
-        <h3 class="font-bold text-base tracking-tight">계정 생성 요청</h3>
-        <button onclick="closeAccountRequestModal()" class="w-8 h-8 rounded-pill bg-canvas-soft hover:bg-[#eaeaea] text-text-muted hover:text-ink flex items-center justify-center text-sm font-bold">&times;</button>
-      </div>
-
-      <p class="text-xs text-text-muted leading-relaxed">
-        본명과 개발자와의 관계를 정확히 입력해주시면 검토 후 계정이 발급됩니다.
-      </p>
-
-      <div class="flex flex-col gap-3 text-xs">
-        <div>
-          <label class="block font-medium text-text-muted mb-1">본명 <span class="text-accent">*</span></label>
-          <input type="text" id="req-acc-name" placeholder="본명을 입력해주세요" class="w-full bg-field border border-transparent rounded-tile px-3.5 py-2.5 text-xs text-ink placeholder-text-faint focus:ring-2 focus:ring-ink focus:bg-white outline-none" />
+  <!-- MODAL: Account Creation Request & Two-Way Chat -->
+  <div id="modal-account-request" class="fixed inset-0 z-50 bg-ink/60 backdrop-blur-sm hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white border border-hairline rounded-container max-w-md w-full p-5 sm:p-6 flex flex-col gap-4 text-ink max-h-[90vh] shadow-2xl">
+      
+      <!-- View 1: New Application Form -->
+      <div id="acc-req-view-form" class="flex flex-col gap-3.5">
+        <div class="flex items-center justify-between pb-3 border-b border-hairline-soft">
+          <div>
+            <h3 class="font-bold text-base tracking-tight">계정 생성 신청 & 소통</h3>
+            <p class="text-[11px] text-text-muted mt-0.5">개발자(정서진)와 직접 확인 후 계정이 발급됩니다</p>
+          </div>
+          <button onclick="closeAccountRequestModal()" class="w-8 h-8 rounded-pill bg-canvas-soft hover:bg-[#eaeaea] text-text-muted hover:text-ink flex items-center justify-center text-sm font-bold">&times;</button>
         </div>
 
-        <div>
-          <label class="block font-medium text-text-muted mb-1">개발자와의 관계 <span class="text-accent">*</span></label>
-          <input type="text" id="req-acc-relation" placeholder="예: 같은 반 친구, 학원 후배 등" class="w-full bg-field border border-transparent rounded-tile px-3.5 py-2.5 text-xs text-ink placeholder-text-faint focus:ring-2 focus:ring-ink focus:bg-white outline-none" />
+        <p class="text-xs text-text-muted leading-relaxed">
+          본인 확인을 위해 <strong>본명, 연락처/SNS, 개발자와의 관계</strong>를 작성해주세요. 신청 후 개발자와 1:1 대화를 통해 신원을 확인하고 계정을 발급받을 수 있습니다.
+        </p>
+
+        <div class="flex flex-col gap-2.5 text-xs">
+          <div>
+            <label class="block font-medium text-text-muted mb-1">본명 <span class="text-accent">*</span></label>
+            <input type="text" id="req-acc-name" placeholder="본명을 입력해주세요 (예: 홍길동)" class="w-full bg-field border border-transparent rounded-tile px-3.5 py-2 text-xs text-ink placeholder-text-faint focus:ring-2 focus:ring-ink focus:bg-white outline-none" />
+          </div>
+
+          <div>
+            <label class="block font-medium text-text-muted mb-1">연락처 또는 SNS <span class="text-accent">*</span></label>
+            <input type="text" id="req-acc-contact" placeholder="전화번호, 인스타 ID, 카톡 ID 등 (신원 확인용)" class="w-full bg-field border border-transparent rounded-tile px-3.5 py-2 text-xs text-ink placeholder-text-faint focus:ring-2 focus:ring-ink focus:bg-white outline-none" />
+          </div>
+
+          <div>
+            <label class="block font-medium text-text-muted mb-1">개발자와의 관계 / 계정 신청 사유 <span class="text-accent">*</span></label>
+            <input type="text" id="req-acc-relation" placeholder="예: OO학원 O반, 인스타/지인 소개 등 상세히 작성" class="w-full bg-field border border-transparent rounded-tile px-3.5 py-2 text-xs text-ink placeholder-text-faint focus:ring-2 focus:ring-ink focus:bg-white outline-none" />
+          </div>
+
+          <div>
+            <label class="block font-medium text-text-muted mb-1">첫 메시지 <span class="text-[11px] font-normal text-text-faint">(선택)</span></label>
+            <textarea id="req-acc-message" rows="2" placeholder="개발자에게 남길 말씀이 있다면 적어주세요." class="w-full bg-field border border-transparent rounded-tile px-3.5 py-2 text-xs text-ink placeholder-text-faint focus:ring-2 focus:ring-ink focus:bg-white outline-none resize-none"></textarea>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between pt-2 border-t border-hairline-soft">
+          <button onclick="switchToExistingChatPrompt()" class="text-xs text-text-muted hover:text-ink font-semibold underline">
+            기존 신청 내역 확인
+          </button>
+          <div class="flex items-center gap-2">
+            <button onclick="closeAccountRequestModal()" class="px-4 py-2 rounded-pill bg-canvas-soft hover:bg-[#eaeaea] text-text-muted font-medium text-xs">취소</button>
+            <button onclick="submitAccountRequest()" class="px-5 py-2 rounded-pill bg-ink hover:bg-[#262626] text-white font-semibold text-xs shadow-2xs">신청 및 대화 시작</button>
+          </div>
         </div>
       </div>
 
-      <div class="flex items-center justify-end gap-2 pt-2 border-t border-hairline-soft">
-        <button onclick="closeAccountRequestModal()" class="px-4 py-2 rounded-pill bg-canvas-soft hover:bg-[#eaeaea] text-text-muted font-medium text-xs">취소</button>
-        <button onclick="submitAccountRequest()" class="px-5 py-2 rounded-pill bg-ink hover:bg-[#262626] text-white font-semibold text-xs">요청 전송</button>
+      <!-- View 2: Live Two-way Chat & Status View -->
+      <div id="acc-req-view-chat" class="hidden flex flex-col gap-3 flex-1 min-h-0">
+        <div class="flex items-center justify-between pb-3 border-b border-hairline-soft flex-shrink-0">
+          <div class="flex items-center gap-2">
+            <button onclick="showRequestFormView()" class="px-2 py-1 rounded-pill bg-canvas-soft hover:bg-neutral-200 text-text-muted hover:text-ink text-xs font-bold" title="새 신청서 작성">← 작성</button>
+            <div>
+              <div class="flex items-center gap-2">
+                <h3 id="chat-applicant-name" class="font-bold text-sm sm:text-base tracking-tight">신청자 대화방</h3>
+                <span id="chat-status-badge" class="px-2 py-0.5 rounded-pill bg-blue-100 text-blue-700 text-[10px] font-bold">대기중</span>
+              </div>
+              <p class="text-[11px] text-text-muted">개발자(정서진)와의 1:1 신원 확인 대화방</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <button onclick="refreshActiveChat()" class="px-2.5 py-1 rounded-pill bg-canvas-soft hover:bg-neutral-200 text-xs font-semibold flex items-center gap-1 text-ink" title="대화 새로고침">
+              🔄 새로고침
+            </button>
+            <button onclick="closeAccountRequestModal()" class="w-8 h-8 rounded-pill bg-canvas-soft hover:bg-[#eaeaea] text-text-muted hover:text-ink flex items-center justify-center text-sm font-bold">&times;</button>
+          </div>
+        </div>
+
+        <!-- Approval / Rejection Announcement Banner -->
+        <div id="chat-announcement-box" class="hidden flex-shrink-0"></div>
+
+        <!-- Request Details Summary Pill -->
+        <div id="chat-meta-info" class="p-2.5 bg-canvas-soft border border-hairline rounded-tile text-[11px] text-text-muted flex flex-col gap-0.5 flex-shrink-0">
+        </div>
+
+        <!-- Messages Thread (Scrollable) -->
+        <div id="chat-messages-container" class="flex-1 overflow-y-auto p-2.5 bg-[#fafafa] border border-hairline rounded-tile flex flex-col gap-2 min-h-[170px] max-h-[260px]">
+          <!-- Rendered via JS -->
+        </div>
+
+        <!-- Reply Input -->
+        <div class="flex items-center gap-1.5 pt-1 border-t border-hairline-soft flex-shrink-0">
+          <input 
+            type="text" 
+            id="chat-user-input" 
+            placeholder="개발자에게 답변 또는 추가 정보 보내기..." 
+            onkeydown="if(event.key==='Enter') sendApplicantChatMessage()"
+            class="flex-1 bg-field border border-transparent rounded-tile px-3.5 py-2 text-xs text-ink placeholder-text-faint focus:ring-2 focus:ring-ink focus:bg-white outline-none" 
+          />
+          <button onclick="sendApplicantChatMessage()" class="px-4 py-2 rounded-pill bg-ink hover:bg-[#262626] active:scale-95 text-white font-bold text-xs shadow-2xs">
+            전송
+          </button>
+        </div>
       </div>
+
     </div>
   </div>
 
@@ -2109,10 +2188,53 @@
       showToast(`${cur.name}님, 비밀번호가 안전하게 변경되었습니다!`);
     }
 
-    function openAccountRequestModal() {
+    // ==========================================
+    // TWO-WAY ACCOUNT REQUEST & CHAT SYSTEM
+    // ==========================================
+    const STORAGE_KEY_MY_REQUEST_ID = 'suneung_my_active_request_id';
+    const STORAGE_KEY_LOCAL_REQUESTS = 'suneung_account_requests_v2';
+    let currentActiveRequestId = null;
+    let cachedActiveRequestObj = null;
+
+    function getLocalAccountRequests() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY_LOCAL_REQUESTS)) || [];
+      } catch(e) {
+        return [];
+      }
+    }
+
+    function saveLocalAccountRequests(list) {
+      try {
+        localStorage.setItem(STORAGE_KEY_LOCAL_REQUESTS, JSON.stringify(list));
+      } catch(e) {}
+    }
+
+    function showRequestFormView() {
+      const formView = document.getElementById('acc-req-view-form');
+      const chatView = document.getElementById('acc-req-view-chat');
+      if (formView) formView.classList.remove('hidden');
+      if (chatView) chatView.classList.add('hidden');
+    }
+
+    function showRequestChatView() {
+      const formView = document.getElementById('acc-req-view-form');
+      const chatView = document.getElementById('acc-req-view-chat');
+      if (formView) formView.classList.add('hidden');
+      if (chatView) chatView.classList.remove('hidden');
+    }
+
+    async function openAccountRequestModal() {
       const modal = document.getElementById('modal-account-request');
       if (modal) modal.classList.remove('hidden');
       document.body.classList.add('overflow-hidden');
+
+      const savedReqId = localStorage.getItem(STORAGE_KEY_MY_REQUEST_ID);
+      if (savedReqId) {
+        await openApplicantChat(savedReqId);
+      } else {
+        showRequestFormView();
+      }
     }
 
     function closeAccountRequestModal() {
@@ -2121,37 +2243,325 @@
       document.body.classList.remove('overflow-hidden');
     }
 
+    async function switchToExistingChatPrompt() {
+      const inputName = prompt("신청하셨던 본명을 입력해주세요 (예: 홍길동):");
+      if (!inputName || !inputName.trim()) return;
+      await openApplicantChatByName(inputName.trim());
+    }
+
+    async function openAccountStatusCheckModal() {
+      const modal = document.getElementById('modal-account-request');
+      if (modal) modal.classList.remove('hidden');
+      document.body.classList.add('overflow-hidden');
+
+      const savedReqId = localStorage.getItem(STORAGE_KEY_MY_REQUEST_ID);
+      if (savedReqId) {
+        await openApplicantChat(savedReqId);
+      } else {
+        await switchToExistingChatPrompt();
+      }
+    }
+
+    async function findRequestById(id) {
+      if (supabaseClient) {
+        try {
+          const { data, error } = await supabaseClient
+            .from('account_requests')
+            .select('*')
+            .eq('id', id)
+            .maybeSingle();
+          if (!error && data) return data;
+        } catch(e) {
+          console.warn("Supabase find request err:", e);
+        }
+      }
+      const local = getLocalAccountRequests();
+      return local.find(r => String(r.id) === String(id)) || null;
+    }
+
+    async function openApplicantChatByName(name) {
+      let req = null;
+      if (supabaseClient) {
+        try {
+          const { data, error } = await supabaseClient
+            .from('account_requests')
+            .select('*')
+            .eq('name', name)
+            .order('created_at', { ascending: false })
+            .limit(1);
+          if (!error && data && data.length > 0) req = data[0];
+        } catch(e) {}
+      }
+      if (!req) {
+        const local = getLocalAccountRequests();
+        req = local.find(r => r.name === name) || null;
+      }
+
+      if (!req) {
+        alert(`[${name}] 님 이름으로 접수된 신청 내역이 없습니다.\n새로 신청서를 작성해주세요.`);
+        showRequestFormView();
+        return;
+      }
+
+      localStorage.setItem(STORAGE_KEY_MY_REQUEST_ID, req.id);
+      await openApplicantChat(req.id, req);
+    }
+
+    async function openApplicantChat(id, preloadedReq = null) {
+      currentActiveRequestId = id;
+      showRequestChatView();
+
+      const req = preloadedReq || (await findRequestById(id));
+      if (!req) {
+        showRequestFormView();
+        return;
+      }
+
+      cachedActiveRequestObj = req;
+      renderApplicantChatUI(req);
+    }
+
+    function renderApplicantChatUI(req) {
+      document.getElementById('chat-applicant-name').textContent = `${req.name}님의 신청서`;
+      
+      const badgeEl = document.getElementById('chat-status-badge');
+      if (badgeEl) {
+        if (req.status === 'approved') {
+          badgeEl.className = 'px-2 py-0.5 rounded-pill bg-emerald-100 text-emerald-800 text-[10px] font-bold';
+          badgeEl.textContent = '승인완료';
+        } else if (req.status === 'rejected') {
+          badgeEl.className = 'px-2 py-0.5 rounded-pill bg-neutral-200 text-text-muted text-[10px] font-bold';
+          badgeEl.textContent = '반려됨';
+        } else {
+          badgeEl.className = 'px-2 py-0.5 rounded-pill bg-blue-100 text-blue-700 text-[10px] font-bold';
+          badgeEl.textContent = '대기중';
+        }
+      }
+
+      const annEl = document.getElementById('chat-announcement-box');
+      if (annEl) {
+        if (req.status === 'approved') {
+          annEl.classList.remove('hidden');
+          annEl.innerHTML = `
+            <div class="bg-emerald-50 border border-emerald-200 rounded-tile p-3 text-emerald-900 text-xs flex items-center justify-between gap-2">
+              <div>
+                <div class="font-bold">🎉 계정 승인 완료!</div>
+                <div class="text-[11px] text-emerald-700">초기 비밀번호 <strong>1234</strong>로 로그인하세요.</div>
+              </div>
+              <button onclick="fillLoginFromChat('${req.name}')" class="px-3 py-1.5 rounded-pill bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] shadow-2xs whitespace-nowrap">
+                바로 로그인
+              </button>
+            </div>
+          `;
+        } else if (req.status === 'rejected') {
+          annEl.classList.remove('hidden');
+          annEl.innerHTML = `
+            <div class="bg-red-50 border border-red-200 rounded-tile p-2.5 text-red-800 text-xs font-medium">
+              ⚠️ 계정 생성이 반려되었습니다. 아래 개발자의 안내 메시지를 확인해주세요.
+            </div>
+          `;
+        } else {
+          annEl.classList.add('hidden');
+          annEl.innerHTML = '';
+        }
+      }
+
+      const metaEl = document.getElementById('chat-meta-info');
+      if (metaEl) {
+        metaEl.innerHTML = `
+          <div class="flex items-center justify-between text-text-faint text-[10px]">
+            <span>접수일시: ${req.created_at ? new Date(req.created_at).toLocaleString() : '방금 전'}</span>
+            <span>ID: #${req.id}</span>
+          </div>
+          <div class="truncate text-ink font-medium">📞 연락처/SNS: ${req.contact || '미기재'}</div>
+          <div class="truncate text-text-muted">💡 관계/사유: ${req.relation || '미기재'}</div>
+        `;
+      }
+
+      const msgContainer = document.getElementById('chat-messages-container');
+      if (msgContainer) {
+        const msgs = Array.isArray(req.messages) ? req.messages : [];
+        if (msgs.length === 0) {
+          msgContainer.innerHTML = '<div class="py-8 text-center text-text-muted text-xs">주고받은 대화가 없습니다.<br>개발자에게 추가 문의나 메시지를 보내보세요.</div>';
+        } else {
+          let html = '';
+          msgs.forEach(m => {
+            const isAdmin = m.sender === 'admin';
+            if (isAdmin) {
+              html += `
+                <div class="flex flex-col items-start gap-1 max-w-[85%]">
+                  <span class="text-[10px] font-bold text-purple-700 flex items-center gap-1">
+                    👑 개발자 (정서진)
+                  </span>
+                  <div class="bg-white border border-purple-200 rounded-tile px-3 py-2 text-xs text-ink shadow-2xs leading-relaxed">
+                    ${m.text}
+                  </div>
+                  <span class="text-[9px] text-text-faint">${m.time || ''}</span>
+                </div>
+              `;
+            } else {
+              html += `
+                <div class="flex flex-col items-end gap-1 max-w-[85%] ml-auto">
+                  <span class="text-[10px] font-medium text-text-muted">나 (${m.name || req.name})</span>
+                  <div class="bg-ink text-white rounded-tile px-3 py-2 text-xs shadow-2xs leading-relaxed">
+                    ${m.text}
+                  </div>
+                  <span class="text-[9px] text-text-faint">${m.time || ''}</span>
+                </div>
+              `;
+            }
+          });
+          msgContainer.innerHTML = html;
+          msgContainer.scrollTop = msgContainer.scrollHeight;
+        }
+      }
+    }
+
     async function submitAccountRequest() {
       const name = (document.getElementById('req-acc-name')?.value || '').trim();
+      const contact = (document.getElementById('req-acc-contact')?.value || '').trim();
       const rel = (document.getElementById('req-acc-relation')?.value || '').trim();
+      const msg = (document.getElementById('req-acc-message')?.value || '').trim();
 
       if (!name) {
         alert("본명을 입력해주세요!");
         document.getElementById('req-acc-name')?.focus();
         return;
       }
+      if (!contact) {
+        alert("본인 확인을 위한 연락처 또는 SNS(전화번호, 인스타, 카톡 ID)를 입력해주세요!");
+        document.getElementById('req-acc-contact')?.focus();
+        return;
+      }
       if (!rel) {
-        alert("개발자와의 관계를 입력해주세요!");
+        alert("개발자와의 관계 또는 계정 신청 사유를 입력해주세요!");
         document.getElementById('req-acc-relation')?.focus();
         return;
       }
 
       const nowStr = new Date().toLocaleString();
-      const tgMsg = `🔔 [SEOARCH - 신규 계정 생성 요청]\n\n• 본명: ${name}\n• 개발자와의 관계: ${rel}\n• 요청시각: ${nowStr}`;
-      sendTelegramAlert(tgMsg);
+      const initialMsgs = [];
+      if (msg) {
+        initialMsgs.push({
+          sender: 'applicant',
+          name: name,
+          text: msg,
+          time: nowStr
+        });
+      }
+
+      let reqId = 'REQ_' + Date.now();
+      const newReq = {
+        id: reqId,
+        name: name,
+        contact: contact,
+        relation: rel,
+        messages: initialMsgs,
+        status: 'pending',
+        created_at: new Date().toISOString()
+      };
 
       if (supabaseClient) {
         try {
-          await supabaseClient.from('account_requests').insert([
-            { name: name, relation: rel, status: 'pending' }
-          ]);
+          const { data, error } = await supabaseClient
+            .from('account_requests')
+            .insert([{
+              name: name,
+              contact: contact,
+              relation: rel,
+              messages: initialMsgs,
+              status: 'pending'
+            }])
+            .select();
+          if (!error && data && data[0]) {
+            reqId = data[0].id;
+            newReq.id = reqId;
+          }
         } catch(e) {
           console.warn("Supabase request insert err:", e);
         }
       }
 
+      const localReqs = getLocalAccountRequests();
+      localReqs.unshift(newReq);
+      saveLocalAccountRequests(localReqs);
+
+      localStorage.setItem(STORAGE_KEY_MY_REQUEST_ID, reqId);
+
+      const tgMsg = `🔔 [SEOARCH - 신규 계정 신청 & 대화방 개설]\n\n• 본명: ${name}\n• 연락처/SNS: ${contact}\n• 관계/사유: ${rel}\n• 메시지: ${msg || '없음'}\n• 시각: ${nowStr}\n\n👉 관리자 패널에서 바로 답장하거나 승인하실 수 있습니다.`;
+      sendTelegramAlert(tgMsg);
+
+      showToast("신청이 접수되었습니다! 개발자와의 1:1 대화방으로 연결됩니다.");
+      await openApplicantChat(reqId, newReq);
+    }
+
+    async function sendApplicantChatMessage() {
+      const inputEl = document.getElementById('chat-user-input');
+      const text = (inputEl?.value || '').trim();
+      if (!text || !cachedActiveRequestObj) return;
+
+      const timeStr = new Date().toLocaleString();
+      const newMsg = {
+        sender: 'applicant',
+        name: cachedActiveRequestObj.name,
+        text: text,
+        time: timeStr
+      };
+
+      if (!Array.isArray(cachedActiveRequestObj.messages)) {
+        cachedActiveRequestObj.messages = [];
+      }
+      cachedActiveRequestObj.messages.push(newMsg);
+
+      // Save to Supabase
+      if (supabaseClient && typeof cachedActiveRequestObj.id === 'number') {
+        try {
+          await supabaseClient
+            .from('account_requests')
+            .update({ messages: cachedActiveRequestObj.messages })
+            .eq('id', cachedActiveRequestObj.id);
+        } catch(e) {
+          console.warn("Supabase message update err:", e);
+        }
+      }
+
+      // Save to Local
+      const localReqs = getLocalAccountRequests();
+      const idx = localReqs.findIndex(r => String(r.id) === String(cachedActiveRequestObj.id));
+      if (idx !== -1) {
+        localReqs[idx].messages = cachedActiveRequestObj.messages;
+      } else {
+        localReqs.unshift(cachedActiveRequestObj);
+      }
+      saveLocalAccountRequests(localReqs);
+
+      // Telegram alert to developer
+      const tgMsg = `💬 [SEOARCH 가입신청자 답장]\n\n• 신청자: ${cachedActiveRequestObj.name} (${cachedActiveRequestObj.contact || '연락처 미기재'})\n• 메시지: ${text}\n• 시각: ${timeStr}`;
+      sendTelegramAlert(tgMsg);
+
+      inputEl.value = '';
+      renderApplicantChatUI(cachedActiveRequestObj);
+      showToast("메시지가 개발자에게 전송되었습니다.");
+    }
+
+    async function refreshActiveChat() {
+      if (!currentActiveRequestId) return;
+      const req = await findRequestById(currentActiveRequestId);
+      if (req) {
+        cachedActiveRequestObj = req;
+        renderApplicantChatUI(req);
+        showToast("대화 내역을 최신 상태로 갱신했습니다.");
+      }
+    }
+
+    function fillLoginFromChat(name) {
+      const uInput = document.getElementById('login-username');
+      const pInput = document.getElementById('login-password');
+      if (uInput) uInput.value = name;
+      if (pInput) pInput.value = '1234';
       closeAccountRequestModal();
-      alert(`계정 생성 요청이 개발자에게 전송되었습니다.\n검토 및 승인 후 초기 비밀번호(1234)로 접속하실 수 있습니다.`);
+      const submitBtn = document.getElementById('btn-login-submit');
+      if (submitBtn) submitBtn.focus();
     }
 
     // ==========================================
@@ -2405,6 +2815,10 @@
         }
       }
 
+      if (reqs.length === 0) {
+        reqs = getLocalAccountRequests();
+      }
+
       cachedAdminRequests = reqs;
       const pendingCount = reqs.filter(r => (r.status || 'pending') === 'pending').length;
       const countEl = document.getElementById('admin-requests-count');
@@ -2425,6 +2839,7 @@
       cachedAdminRequests.forEach(r => {
         const isPending = (r.status || 'pending') === 'pending';
         const dateStr = r.created_at ? new Date(r.created_at).toLocaleString() : '';
+        const msgs = Array.isArray(r.messages) ? r.messages : [];
 
         let statusBadge = '';
         if (isPending) {
@@ -2435,19 +2850,49 @@
           statusBadge = '<span class="px-2 py-0.5 rounded-pill bg-neutral-200 text-text-muted font-bold text-[10px]">거절됨</span>';
         }
 
-        let actionButtons = '';
-        if (isPending) {
-          actionButtons = `
-            <div class="flex items-center justify-end gap-2 pt-1 border-t border-hairline-soft">
-              <button onclick="adminRejectRequest('${r.id}', '${r.name}')" class="px-3 py-1 rounded-pill bg-white hover:bg-neutral-100 border border-hairline text-text-muted text-[11px] font-semibold transition-all">
-                거절
-              </button>
-              <button onclick="adminApproveRequest('${r.id}', '${r.name}', '${r.relation}')" class="px-3.5 py-1 rounded-pill bg-ink hover:bg-[#262626] text-white text-[11px] font-semibold transition-all">
-                ✅ 승인 및 계정 생성
-              </button>
-            </div>
-          `;
+        // Mini chat history between applicant and admin
+        let chatHtml = '';
+        if (msgs.length > 0) {
+          chatHtml = '<div class="bg-white border border-hairline rounded-tile p-2.5 flex flex-col gap-1.5 max-h-40 overflow-y-auto my-1 text-xs">';
+          msgs.forEach(m => {
+            const isAdmin = m.sender === 'admin';
+            chatHtml += `
+              <div class="flex flex-col ${isAdmin ? 'items-end' : 'items-start'}">
+                <span class="text-[9px] ${isAdmin ? 'text-purple-700 font-bold' : 'text-text-muted font-semibold'}">
+                  ${isAdmin ? '👑 나 (관리자)' : m.name || r.name} (${m.time || ''})
+                </span>
+                <span class="${isAdmin ? 'bg-purple-50 text-purple-900 border border-purple-200' : 'bg-field text-ink'} px-2.5 py-1 rounded-tile text-xs mt-0.5 inline-block max-w-[90%] leading-relaxed">
+                  ${m.text}
+                </span>
+              </div>
+            `;
+          });
+          chatHtml += '</div>';
+        } else {
+          chatHtml = '<div class="text-[11px] text-text-faint py-1">주고받은 대화가 아직 없습니다.</div>';
         }
+
+        let actionButtons = `
+          <div class="flex items-center justify-between pt-2 border-t border-hairline-soft gap-2 flex-wrap">
+            <button onclick="adminDeleteRequest('${r.id}')" class="px-2.5 py-1 rounded-pill bg-white hover:bg-neutral-100 text-text-muted text-[10px] font-medium border border-hairline transition-all">
+              삭제
+            </button>
+            <div class="flex items-center gap-1.5 ml-auto">
+              ${isPending ? `
+                <button onclick="adminRejectRequest('${r.id}', '${r.name}')" class="px-3 py-1 rounded-pill bg-white hover:bg-red-50 hover:text-red-600 border border-hairline text-text-muted text-[11px] font-semibold transition-all">
+                  거절
+                </button>
+                <button onclick="adminApproveRequest('${r.id}', '${r.name}', '${r.relation}')" class="px-3.5 py-1 rounded-pill bg-ink hover:bg-[#262626] text-white text-[11px] font-semibold transition-all shadow-2xs">
+                  ✅ 승인 및 계정 생성
+                </button>
+              ` : `
+                <button onclick="adminApproveRequest('${r.id}', '${r.name}', '${r.relation}')" class="px-3 py-1 rounded-pill bg-white hover:bg-neutral-100 border border-hairline text-ink text-[10px] font-semibold transition-all">
+                  재승인
+                </button>
+              `}
+            </div>
+          </div>
+        `;
 
         html += `
           <div class="bg-canvas-soft border border-hairline rounded-tile p-3.5 flex flex-col gap-2 text-xs">
@@ -2458,9 +2903,29 @@
               </div>
               <span class="text-text-muted text-[10px]">${dateStr}</span>
             </div>
-            <div class="bg-white border border-hairline p-2.5 rounded-tile text-text-muted leading-relaxed">
-              <strong>개발자와의 관계:</strong> ${r.relation || '미기재'}
+
+            <div class="flex flex-col gap-0.5 text-text-muted text-[11px] bg-white border border-hairline p-2 rounded-tile">
+              <div><strong>📞 연락처/SNS:</strong> <span class="text-ink font-semibold">${r.contact || '미기재'}</span></div>
+              <div><strong>💡 관계/사유:</strong> ${r.relation || '미기재'}</div>
             </div>
+
+            <!-- Mini Chat Thread -->
+            ${chatHtml}
+
+            <!-- Admin Reply Box -->
+            <div class="flex items-center gap-1.5 pt-1">
+              <input 
+                type="text" 
+                id="admin-reply-input-${r.id}" 
+                placeholder="${r.name}님에게 답장/질문 입력 (예: 누구신가요? 전화번호 남겨주세요)..." 
+                onkeydown="if(event.key==='Enter') adminSendReply('${r.id}', '${r.name}')"
+                class="flex-1 bg-white border border-hairline rounded-tile px-3 py-1.5 text-xs text-ink placeholder-text-faint focus:ring-1 focus:ring-ink outline-none" 
+              />
+              <button onclick="adminSendReply('${r.id}', '${r.name}')" class="px-3 py-1.5 rounded-pill bg-purple-600 hover:bg-purple-700 active:scale-95 text-white font-semibold text-xs whitespace-nowrap shadow-2xs">
+                답장 전송
+              </button>
+            </div>
+
             ${actionButtons}
           </div>
         `;
@@ -2469,7 +2934,67 @@
       container.innerHTML = html;
     }
 
+    async function adminSendReply(id, name) {
+      const inputEl = document.getElementById(`admin-reply-input-${id}`);
+      const text = (inputEl?.value || '').trim();
+      if (!text) {
+        alert("신청자에게 보낼 답장 내용을 입력해주세요!");
+        return;
+      }
+
+      const timeStr = new Date().toLocaleString();
+      const replyMsg = {
+        sender: 'admin',
+        name: '정서진 (관리자)',
+        text: text,
+        time: timeStr
+      };
+
+      const req = cachedAdminRequests.find(r => String(r.id) === String(id));
+      if (!req) return;
+
+      if (!Array.isArray(req.messages)) req.messages = [];
+      req.messages.push(replyMsg);
+
+      if (supabaseClient && typeof req.id === 'number') {
+        try {
+          await supabaseClient
+            .from('account_requests')
+            .update({ messages: req.messages })
+            .eq('id', req.id);
+        } catch(e) {
+          console.warn("Supabase reply save err:", e);
+        }
+      }
+
+      const localReqs = getLocalAccountRequests();
+      const idx = localReqs.findIndex(r => String(r.id) === String(id));
+      if (idx !== -1) {
+        localReqs[idx].messages = req.messages;
+      }
+      saveLocalAccountRequests(localReqs);
+
+      inputEl.value = '';
+      renderAdminRequests();
+      showToast(`[${name}] 학생에게 답장을 전송했습니다.`);
+    }
+
     async function adminApproveRequest(id, name, relation) {
+      const timeStr = new Date().toLocaleString();
+      const sysMsg = {
+        sender: 'admin',
+        name: '정서진 (관리자)',
+        text: '🎉 계정이 승인되었습니다! 초기 비밀번호 1234로 지금 로그인하세요.',
+        time: timeStr
+      };
+
+      const req = cachedAdminRequests.find(r => String(r.id) === String(id));
+      if (req) {
+        if (!Array.isArray(req.messages)) req.messages = [];
+        req.messages.push(sysMsg);
+        req.status = 'approved';
+      }
+
       if (supabaseClient) {
         try {
           await supabaseClient
@@ -2481,10 +3006,10 @@
               must_change_password: true,
               is_admin: false
             }]);
-          if (id) {
+          if (id && typeof req?.id === 'number') {
             await supabaseClient
               .from('account_requests')
-              .update({ status: 'approved' })
+              .update({ status: 'approved', messages: req?.messages || [] })
               .eq('id', id);
           }
         } catch(e) {
@@ -2502,22 +3027,75 @@
       };
       localStorage.setItem(STORAGE_KEY_LOCAL_USERS, JSON.stringify(localDb));
 
-      showToast(`[\${name}] 계정이 성공적으로 승인 및 생성되었습니다! (초기비번: 1234)`);
+      const localReqs = getLocalAccountRequests();
+      const lIdx = localReqs.findIndex(r => String(r.id) === String(id));
+      if (lIdx !== -1) {
+        localReqs[lIdx].status = 'approved';
+        localReqs[lIdx].messages = req?.messages || [];
+        saveLocalAccountRequests(localReqs);
+      }
+
+      showToast(`[${name}] 계정이 성공적으로 승인 및 생성되었습니다! (초기비번: 1234)`);
       await loadAdminData();
     }
 
     async function adminRejectRequest(id, name) {
-      if (supabaseClient && id) {
+      const reason = prompt(`[${name}] 학생의 신청을 반려하시겠습니까?\n반려 사유를 입력하세요 (신청자가 확인하게 됩니다):`, "본인 확인 불가") || '관리자 검토 결과 반려되었습니다.';
+
+      const timeStr = new Date().toLocaleString();
+      const rejectMsg = {
+        sender: 'admin',
+        name: '정서진 (관리자)',
+        text: `⚠️ 신청이 반려되었습니다. 사유: ${reason}`,
+        time: timeStr
+      };
+
+      const req = cachedAdminRequests.find(r => String(r.id) === String(id));
+      if (req) {
+        if (!Array.isArray(req.messages)) req.messages = [];
+        req.messages.push(rejectMsg);
+        req.status = 'rejected';
+      }
+
+      if (supabaseClient && id && typeof req?.id === 'number') {
         try {
           await supabaseClient
             .from('account_requests')
-            .update({ status: 'rejected' })
+            .update({ status: 'rejected', messages: req?.messages || [] })
             .eq('id', id);
         } catch(e) {
           console.error("Supabase reject err:", e);
         }
       }
-      showToast(`[\${name}] 학생의 요청이 거절되었습니다.`);
+
+      const localReqs = getLocalAccountRequests();
+      const lIdx = localReqs.findIndex(r => String(r.id) === String(id));
+      if (lIdx !== -1) {
+        localReqs[lIdx].status = 'rejected';
+        localReqs[lIdx].messages = req?.messages || [];
+        saveLocalAccountRequests(localReqs);
+      }
+
+      showToast(`[${name}] 학생의 요청이 반려되었습니다.`);
+      renderAdminRequests();
+    }
+
+    async function adminDeleteRequest(id) {
+      if (!confirm("이 신청 내역을 완전히 삭제하시겠습니까?")) return;
+
+      if (supabaseClient && typeof id === 'number') {
+        try {
+          await supabaseClient
+            .from('account_requests')
+            .delete()
+            .eq('id', id);
+        } catch(e) {}
+      }
+
+      const localReqs = getLocalAccountRequests().filter(r => String(r.id) !== String(id));
+      saveLocalAccountRequests(localReqs);
+
+      showToast("신청 내역이 삭제되었습니다.");
       await fetchAdminRequests();
     }
 
