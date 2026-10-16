@@ -1959,8 +1959,8 @@
     // AUTHENTICATION & SUPABASE INTEGRATION
     // ==========================================
     const SUPABASE_CONFIG = {
-      url: window.__SUPABASE_URL__ || '',
-      anonKey: window.__SUPABASE_ANON_KEY__ || ''
+      url: window.__SUPABASE_URL__ || 'https://sizlqlyqbczzwasdtvyr.supabase.co',
+      anonKey: window.__SUPABASE_ANON_KEY__ || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNpemxxbHlxYmN6endhc2R0dnlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxMzg1OTEsImV4cCI6MjEwNzcxNDU5MX0.dAMoWP-Wg6KPpCHX-hEaf4hptAyXPsuG4XtM5vQDtfg'
     };
 
     let supabaseClient = null;
@@ -2083,6 +2083,7 @@
                 username: data.username,
                 name: data.name || data.username,
                 must_change: data.must_change_password !== false,
+                is_admin: data.is_admin === true || data.username === '정서진',
                 source: 'supabase'
               };
             } else {
