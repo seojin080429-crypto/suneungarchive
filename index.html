@@ -753,10 +753,9 @@
       <div class="flex flex-col gap-3 text-xs">
         <div>
           <label class="block font-medium text-text-muted mb-1">
-            요청자 이름 <span class="text-accent">*</span>
-            <span class="text-[11px] font-medium text-accent block sm:inline mt-0.5 sm:mt-0 sm:ml-1">(본명으로 적어줘야 자료 추가했을때 개발자가 알릴 수 있습니다)</span>
+            요청자 <span class="text-[11px] font-normal text-text-faint">(선택 / 미입력 시 로그인 계정으로 자동 접수)</span>
           </label>
-          <input type="text" id="req-name" placeholder="본명을 입력해주세요 (본명으로 적어줘야 자료 추가했을때 개발자가 알릴 수 있습니다)" class="w-full bg-field border border-transparent rounded-tile px-3.5 py-2.5 text-xs text-ink placeholder-text-faint focus:ring-2 focus:ring-ink focus:bg-white outline-none" />
+          <input type="text" id="req-name" placeholder="미입력 시 로그인된 계정 이름으로 자동 전송됩니다" class="w-full bg-field border border-transparent rounded-tile px-3.5 py-2.5 text-xs text-ink placeholder-text-faint focus:ring-2 focus:ring-ink focus:bg-white outline-none" />
         </div>
 
         <div>
@@ -1516,10 +1515,11 @@
     // Request Modal
     function openRequestModal(defaultTitle = '') {
       try {
-        const savedName = localStorage.getItem('suneung_requester_name') || '';
+        const user = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
+        const savedName = localStorage.getItem('suneung_requester_name') || (user ? user.username : '');
         const nameEl = document.getElementById('req-name');
-        if (nameEl && savedName) {
-          nameEl.value = savedName;
+        if (nameEl) {
+          nameEl.value = savedName || (user ? user.username : '');
         }
       } catch(e) {}
       document.getElementById('req-title').value = defaultTitle;
@@ -1531,17 +1531,15 @@
       document.body.classList.remove('overflow-hidden');
     }
     function submitRequest() {
-      const name = (document.getElementById('req-name')?.value || '').trim();
+      const user = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
+      let name = (document.getElementById('req-name')?.value || '').trim();
+      if (!name) {
+        name = (user && user.username) ? user.username : '익명';
+      }
       const subj = document.getElementById('req-subject').value;
       const title = document.getElementById('req-title').value.trim();
       const round = document.getElementById('req-round').value.trim();
       const memo = document.getElementById('req-memo').value.trim();
-
-      if (!name) {
-        alert("요청자 이름을 입력해주세요!\n(본명으로 적어줘야 자료 추가했을때 개발자가 알릴 수 있습니다)");
-        document.getElementById('req-name')?.focus();
-        return;
-      }
 
       if (!title) {
         alert("자료명을 입력해주세요!");
@@ -1550,7 +1548,7 @@
       }
 
       try {
-        localStorage.setItem('suneung_requester_name', name);
+        if (name) localStorage.setItem('suneung_requester_name', name);
       } catch(e) {}
 
       const item = {
