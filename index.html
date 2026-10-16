@@ -245,6 +245,9 @@
 
         <!-- User Info & Logout -->
         <div id="user-header-profile" class="hidden flex items-center gap-1.5 pl-1.5 sm:pl-2 border-l border-hairline">
+          <button id="btn-admin-panel" onclick="openAdminModal()" class="hidden px-2.5 sm:px-3 py-1 rounded-pill bg-purple-600 hover:bg-purple-700 active:scale-95 text-white font-bold text-[10px] sm:text-[11px] transition-all flex items-center gap-1 shadow-2xs">
+            <span>⚙️ 관리자</span>
+          </button>
           <span class="text-xs font-bold text-ink" id="user-name-display"></span>
           <button onclick="handleLogout()" class="px-2 sm:px-2.5 py-1 rounded-pill bg-canvas-soft hover:bg-red-50 hover:text-red-600 active:scale-95 text-text-muted border border-hairline font-semibold text-[10px] sm:text-[11px] transition-all">
             로그아웃
@@ -642,6 +645,99 @@
 
       <div class="pt-2 border-t border-hairline-soft">
         <button onclick="submitPasswordChange()" class="w-full py-2.5 rounded-pill bg-ink hover:bg-[#262626] text-white font-semibold text-xs">비밀번호 변경 완료</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Admin Dashboard Panel -->
+  <div id="modal-admin" class="fixed inset-0 z-50 bg-ink/70 backdrop-blur-sm hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white border border-hairline rounded-container max-w-2xl w-full max-h-[90vh] flex flex-col text-ink overflow-hidden shadow-2xl">
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between p-5 pb-4 border-b border-hairline-soft">
+        <div class="flex items-center gap-2">
+          <span class="px-2.5 py-1 rounded-pill bg-purple-100 text-purple-700 font-bold text-xs">👑 최고 관리자</span>
+          <h3 class="font-bold text-base tracking-tight text-ink">관리자 제어 패널 (정서진님)</h3>
+        </div>
+        <button onclick="closeAdminModal()" class="w-8 h-8 rounded-pill bg-canvas-soft hover:bg-[#eaeaea] text-text-muted hover:text-ink flex items-center justify-center text-sm font-bold">&times;</button>
+      </div>
+
+      <!-- Admin Tabs -->
+      <div class="flex border-b border-hairline px-5 pt-2 bg-canvas-soft gap-2 text-xs font-semibold">
+        <button id="admin-tab-btn-users" onclick="switchAdminTab('users')" class="py-2.5 px-4 border-b-2 border-ink text-ink transition-colors">
+          계정 관리 (<span id="admin-users-count">0</span>)
+        </button>
+        <button id="admin-tab-btn-requests" onclick="switchAdminTab('requests')" class="py-2.5 px-4 border-b-2 border-transparent text-text-muted hover:text-ink transition-colors">
+          계정 생성 신청 (<span id="admin-requests-count">0</span>)
+        </button>
+      </div>
+
+      <!-- Tab 1: Student Users Management -->
+      <div id="admin-tab-users" class="flex-1 overflow-y-auto p-5 flex flex-col gap-4">
+        <!-- New Account Creation Form Card -->
+        <div class="bg-canvas-soft border border-hairline rounded-tile p-4 flex flex-col gap-2.5">
+          <div class="font-bold text-xs text-ink flex items-center gap-1.5">
+            <span>➕</span> <span>새 계정 직접 생성</span>
+          </div>
+          <div class="flex flex-col sm:flex-row gap-2">
+            <input 
+              type="text" 
+              id="admin-new-username" 
+              placeholder="학생 이름 (아이디)" 
+              class="flex-1 bg-white border border-hairline rounded-tile px-3 py-2 text-xs text-ink placeholder-text-faint focus:ring-1 focus:ring-ink outline-none" 
+            />
+            <input 
+              type="text" 
+              id="admin-new-password" 
+              placeholder="초기 비번 (기본: 1234)" 
+              value="1234"
+              class="w-full sm:w-36 bg-white border border-hairline rounded-tile px-3 py-2 text-xs text-ink placeholder-text-faint focus:ring-1 focus:ring-ink outline-none" 
+            />
+            <button onclick="adminCreateAccount()" class="px-4 py-2 rounded-pill bg-ink hover:bg-[#262626] active:scale-95 text-white font-semibold text-xs whitespace-nowrap shadow-2xs">
+              계정 생성
+            </button>
+          </div>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="flex items-center gap-2">
+          <input 
+            type="text" 
+            id="admin-search-user" 
+            placeholder="학생 이름 검색..." 
+            oninput="renderAdminUsers()"
+            class="flex-1 bg-field border border-transparent rounded-tile px-3.5 py-2 text-xs text-ink placeholder-text-faint focus:ring-1 focus:ring-ink focus:bg-white outline-none" 
+          />
+          <button onclick="loadAdminData()" class="px-3 py-2 rounded-pill bg-canvas-soft hover:bg-neutral-200 text-text-muted text-xs font-semibold flex items-center gap-1">
+            🔄 새로고침
+          </button>
+        </div>
+
+        <div class="text-[11px] text-text-muted leading-relaxed">
+          💡 <strong>[초기화]</strong>를 누르면 비번이 1234로 복구되며 재로그인 시 변경이 요구됩니다. <strong>[삭제]</strong>를 누르면 계정이 즉시 말소됩니다.
+        </div>
+
+        <!-- Users List -->
+        <div id="admin-users-list" class="flex flex-col gap-2">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+
+      <!-- Tab 2: Account Requests Management -->
+      <div id="admin-tab-requests" class="hidden flex-1 overflow-y-auto p-5 flex flex-col gap-3">
+        <div class="text-xs text-text-muted">
+          학생들이 보낸 가입 요청 목록입니다. 승인 시 초기 비번 1234로 계정이 자동 생성됩니다.
+        </div>
+        <div id="admin-requests-list" class="flex flex-col gap-2.5">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="p-3.5 sm:p-4 border-t border-hairline-soft bg-canvas-soft flex items-center justify-between text-xs text-text-muted">
+        <span>SEOARCH 사용자 권한 인증 센터</span>
+        <button onclick="closeAdminModal()" class="px-4 py-1.5 rounded-pill bg-white border border-hairline hover:bg-neutral-100 font-medium text-ink">
+          닫기
+        </button>
       </div>
     </div>
   </div>
@@ -1818,8 +1914,11 @@
             username: name,
             name: name,
             password: '1234',
-            must_change: true
+            must_change: true,
+            is_admin: name === '정서진'
           };
+        } else if (name === '정서진') {
+          db[name].is_admin = true;
         }
       });
       localStorage.setItem(STORAGE_KEY_LOCAL_USERS, JSON.stringify(db));
@@ -1840,6 +1939,7 @@
       const mainApp = document.getElementById('main-dashboard-app');
       const profile = document.getElementById('user-header-profile');
       const nameDisp = document.getElementById('user-name-display');
+      const adminBtn = document.getElementById('btn-admin-panel');
 
       if (!user) {
         if (gate) gate.classList.remove('hidden');
@@ -1850,6 +1950,13 @@
         if (mainApp) mainApp.classList.remove('hidden');
         if (profile) profile.classList.remove('hidden');
         if (nameDisp) nameDisp.textContent = `👤 ${user.name}님`;
+
+        // Admin badge & button visibility
+        if (user.is_admin || user.username === '정서진') {
+          if (adminBtn) adminBtn.classList.remove('hidden');
+        } else {
+          if (adminBtn) adminBtn.classList.add('hidden');
+        }
 
         // Check forced password change
         if (user.must_change) {
@@ -1930,8 +2037,13 @@
           username: user.username,
           name: user.name,
           must_change: user.must_change,
+          is_admin: user.is_admin || user.username === '정서진',
           source: 'local'
         };
+      }
+
+      if (authenticatedUser.username === '정서진') {
+        authenticatedUser.is_admin = true;
       }
 
       // Save session
@@ -2042,6 +2154,364 @@
 
       closeAccountRequestModal();
       alert(`계정 생성 요청이 개발자에게 전송되었습니다.\n검토 및 승인 후 초기 비밀번호(1234)로 접속하실 수 있습니다.`);
+    }
+
+    // ==========================================
+    // ADMIN PANEL MANAGEMENT FUNCTIONS
+    // ==========================================
+    let cachedAdminUsers = [];
+    let cachedAdminRequests = [];
+
+    function openAdminModal() {
+      const user = getCurrentUser();
+      if (!user || (!user.is_admin && user.username !== '정서진')) {
+        alert("최고 관리자만 접근할 수 있습니다!");
+        return;
+      }
+      const modal = document.getElementById('modal-admin');
+      if (modal) modal.classList.remove('hidden');
+      document.body.classList.add('overflow-hidden');
+      switchAdminTab('users');
+      loadAdminData();
+    }
+
+    function closeAdminModal() {
+      const modal = document.getElementById('modal-admin');
+      if (modal) modal.classList.add('hidden');
+      document.body.classList.remove('overflow-hidden');
+    }
+
+    function switchAdminTab(tab) {
+      const tabUsers = document.getElementById('admin-tab-users');
+      const tabRequests = document.getElementById('admin-tab-requests');
+      const btnUsers = document.getElementById('admin-tab-btn-users');
+      const btnRequests = document.getElementById('admin-tab-btn-requests');
+
+      if (tab === 'users') {
+        if (tabUsers) tabUsers.classList.remove('hidden');
+        if (tabRequests) tabRequests.classList.add('hidden');
+        if (btnUsers) {
+          btnUsers.className = 'py-2.5 px-4 border-b-2 border-ink text-ink transition-colors';
+        }
+        if (btnRequests) {
+          btnRequests.className = 'py-2.5 px-4 border-b-2 border-transparent text-text-muted hover:text-ink transition-colors';
+        }
+      } else {
+        if (tabUsers) tabUsers.classList.add('hidden');
+        if (tabRequests) tabRequests.classList.remove('hidden');
+        if (btnUsers) {
+          btnUsers.className = 'py-2.5 px-4 border-b-2 border-transparent text-text-muted hover:text-ink transition-colors';
+        }
+        if (btnRequests) {
+          btnRequests.className = 'py-2.5 px-4 border-b-2 border-ink text-ink transition-colors';
+        }
+      }
+    }
+
+    async function loadAdminData() {
+      await fetchAdminUsers();
+      await fetchAdminRequests();
+    }
+
+    async function fetchAdminUsers() {
+      let users = [];
+      if (supabaseClient) {
+        try {
+          const { data, error } = await supabaseClient
+            .from('app_users')
+            .select('*')
+            .order('created_at', { ascending: true });
+          if (!error && data && data.length > 0) {
+            users = data;
+          }
+        } catch(e) {
+          console.warn("Supabase load users err:", e);
+        }
+      }
+
+      if (users.length === 0) {
+        const localDb = initLocalUsersDb();
+        users = Object.values(localDb);
+      }
+
+      cachedAdminUsers = users;
+      const countEl = document.getElementById('admin-users-count');
+      if (countEl) countEl.textContent = users.length;
+      renderAdminUsers();
+    }
+
+    function renderAdminUsers() {
+      const container = document.getElementById('admin-users-list');
+      if (!container) return;
+
+      const q = (document.getElementById('admin-search-user')?.value || '').trim().toLowerCase();
+      const filtered = cachedAdminUsers.filter(u => {
+        return (u.username || '').toLowerCase().includes(q) || (u.name || '').toLowerCase().includes(q);
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<div class="py-8 text-center text-xs text-text-muted">일치하는 학생 계정이 없습니다.</div>';
+        return;
+      }
+
+      let html = '';
+      filtered.forEach(u => {
+        const isAdmin = u.is_admin || u.username === '정서진';
+        const mustChange = u.must_change_password !== false && u.must_change !== false;
+
+        let badge = '';
+        if (isAdmin) {
+          badge = '<span class="px-2 py-0.5 rounded-pill bg-purple-100 text-purple-700 text-[10px] font-bold">👑 관리자</span>';
+        } else if (mustChange) {
+          badge = '<span class="px-2 py-0.5 rounded-pill bg-amber-100 text-amber-800 text-[10px] font-medium">⚠️ 초기비번(1234)</span>';
+        } else {
+          badge = '<span class="px-2 py-0.5 rounded-pill bg-emerald-100 text-emerald-800 text-[10px] font-medium">🔒 비번변경완료</span>';
+        }
+
+        html += `
+          <div class="bg-canvas-soft border border-hairline rounded-tile p-3 flex items-center justify-between gap-3 text-xs">
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-ink sm:text-sm">${u.name || u.username}</span>
+              ${badge}
+            </div>
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+              ${!isAdmin ? `
+                <button onclick="adminResetPassword('${u.username}')" class="px-2.5 py-1 rounded-pill bg-white hover:bg-neutral-100 border border-hairline text-ink active:scale-95 text-[11px] font-semibold transition-all shadow-2xs">
+                  🔑 1234 초기화
+                </button>
+                <button onclick="adminDeleteUser('${u.username}')" class="px-2.5 py-1 rounded-pill bg-white hover:bg-red-50 hover:text-red-600 border border-hairline text-text-muted active:scale-95 text-[11px] font-semibold transition-all shadow-2xs">
+                  🗑️ 삭제
+                </button>
+              ` : `
+                <span class="text-[11px] text-text-muted px-2 py-1">마스터 계정</span>
+              `}
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
+    async function adminResetPassword(username) {
+      if (!confirm(`[\${username}] 학생의 비밀번호를 1234로 초기화하시겠습니까?\n(학생이 다음 로그인할 때 비밀번호 변경창이 다시 뜹니다)`)) {
+        return;
+      }
+
+      if (supabaseClient) {
+        try {
+          await supabaseClient
+            .from('app_users')
+            .update({ password: '1234', must_change_password: true })
+            .eq('username', username);
+        } catch(e) {
+          console.error("Supabase reset err:", e);
+        }
+      }
+
+      const localDb = initLocalUsersDb();
+      if (localDb[username]) {
+        localDb[username].password = '1234';
+        localDb[username].must_change = true;
+        localStorage.setItem(STORAGE_KEY_LOCAL_USERS, JSON.stringify(localDb));
+      }
+
+      showToast(`[\${username}] 학생 비밀번호가 1234로 초기화되었습니다.`);
+      await fetchAdminUsers();
+    }
+
+    async function adminCreateAccount() {
+      const un = (document.getElementById('admin-new-username')?.value || '').trim();
+      const pw = (document.getElementById('admin-new-password')?.value || '').trim() || '1234';
+
+      if (!un) {
+        alert("생성할 학생의 이름을 입력해주세요!");
+        document.getElementById('admin-new-username')?.focus();
+        return;
+      }
+
+      if (supabaseClient) {
+        try {
+          await supabaseClient
+            .from('app_users')
+            .upsert([{
+              username: un,
+              name: un,
+              password: pw,
+              must_change_password: true,
+              is_admin: false
+            }]);
+        } catch(e) {
+          console.error("Supabase create err:", e);
+        }
+      }
+
+      const localDb = initLocalUsersDb();
+      localDb[un] = {
+        username: un,
+        name: un,
+        password: pw,
+        must_change: true,
+        is_admin: false
+      };
+      localStorage.setItem(STORAGE_KEY_LOCAL_USERS, JSON.stringify(localDb));
+
+      document.getElementById('admin-new-username').value = '';
+      document.getElementById('admin-new-password').value = '1234';
+      showToast(`[\${un}] 학생 계정이 생성되었습니다. (초기비번: \${pw})`);
+      await fetchAdminUsers();
+    }
+
+    async function adminDeleteUser(username) {
+      if (username === '정서진') {
+        alert("최고 관리자 계정은 삭제할 수 없습니다!");
+        return;
+      }
+
+      if (!confirm(`정말로 [\${username}] 학생의 계정을 삭제하시겠습니까?\n삭제 즉시 로그인이 불가능해집니다.`)) {
+        return;
+      }
+
+      if (supabaseClient) {
+        try {
+          await supabaseClient
+            .from('app_users')
+            .delete()
+            .eq('username', username);
+        } catch(e) {
+          console.error("Supabase delete err:", e);
+        }
+      }
+
+      const localDb = initLocalUsersDb();
+      delete localDb[username];
+      localStorage.setItem(STORAGE_KEY_LOCAL_USERS, JSON.stringify(localDb));
+
+      showToast(`[\${username}] 학생 계정이 삭제되었습니다.`);
+      await fetchAdminUsers();
+    }
+
+    async function fetchAdminRequests() {
+      let reqs = [];
+      if (supabaseClient) {
+        try {
+          const { data, error } = await supabaseClient
+            .from('account_requests')
+            .select('*')
+            .order('created_at', { ascending: false });
+          if (!error && data) {
+            reqs = data;
+          }
+        } catch(e) {
+          console.warn("Supabase load requests err:", e);
+        }
+      }
+
+      cachedAdminRequests = reqs;
+      const pendingCount = reqs.filter(r => (r.status || 'pending') === 'pending').length;
+      const countEl = document.getElementById('admin-requests-count');
+      if (countEl) countEl.textContent = pendingCount;
+      renderAdminRequests();
+    }
+
+    function renderAdminRequests() {
+      const container = document.getElementById('admin-requests-list');
+      if (!container) return;
+
+      if (cachedAdminRequests.length === 0) {
+        container.innerHTML = '<div class="py-8 text-center text-xs text-text-muted">접수된 계정 생성 신청이 없습니다.</div>';
+        return;
+      }
+
+      let html = '';
+      cachedAdminRequests.forEach(r => {
+        const isPending = (r.status || 'pending') === 'pending';
+        const dateStr = r.created_at ? new Date(r.created_at).toLocaleString() : '';
+
+        html += `
+          <div class="bg-canvas-soft border border-hairline rounded-tile p-3.5 flex flex-col gap-2 text-xs">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-ink sm:text-sm">${r.name}</span>
+                \${isPending 
+                  ? '<span class="px-2 py-0.5 rounded-pill bg-blue-100 text-blue-700 font-bold text-[10px]">대기중</span>' 
+                  : (r.status === 'approved' 
+                    ? '<span class="px-2 py-0.5 rounded-pill bg-emerald-100 text-emerald-800 font-bold text-[10px]">승인완료</span>'
+                    : '<span class="px-2 py-0.5 rounded-pill bg-neutral-200 text-text-muted font-bold text-[10px]">거절됨</span>')
+                }
+              </div>
+              <span class="text-text-muted text-[10px]">\${dateStr}</span>
+            </div>
+            <div class="bg-white border border-hairline p-2.5 rounded-tile text-text-muted leading-relaxed">
+              <strong>개발자와의 관계:</strong> \${r.relation || '미기재'}
+            </div>
+            \${isPending ? `
+              <div class="flex items-center justify-end gap-2 pt-1 border-t border-hairline-soft">
+                <button onclick="adminRejectRequest(\${r.id}, '\${r.name}')" class="px-3 py-1 rounded-pill bg-white hover:bg-neutral-100 border border-hairline text-text-muted text-[11px] font-semibold transition-all">
+                  거절
+                </button>
+                <button onclick="adminApproveRequest(\${r.id}, '\${r.name}', '\${r.relation}')" class="px-3.5 py-1 rounded-pill bg-ink hover:bg-[#262626] text-white text-[11px] font-semibold transition-all">
+                  ✅ 승인 및 계정 생성
+                </button>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
+    async function adminApproveRequest(id, name, relation) {
+      if (supabaseClient) {
+        try {
+          await supabaseClient
+            .from('app_users')
+            .upsert([{
+              username: name,
+              name: name,
+              password: '1234',
+              must_change_password: true,
+              is_admin: false
+            }]);
+          if (id) {
+            await supabaseClient
+              .from('account_requests')
+              .update({ status: 'approved' })
+              .eq('id', id);
+          }
+        } catch(e) {
+          console.error("Supabase approve err:", e);
+        }
+      }
+
+      const localDb = initLocalUsersDb();
+      localDb[name] = {
+        username: name,
+        name: name,
+        password: '1234',
+        must_change: true,
+        is_admin: false
+      };
+      localStorage.setItem(STORAGE_KEY_LOCAL_USERS, JSON.stringify(localDb));
+
+      showToast(`[\${name}] 계정이 성공적으로 승인 및 생성되었습니다! (초기비번: 1234)`);
+      await loadAdminData();
+    }
+
+    async function adminRejectRequest(id, name) {
+      if (supabaseClient && id) {
+        try {
+          await supabaseClient
+            .from('account_requests')
+            .update({ status: 'rejected' })
+            .eq('id', id);
+        } catch(e) {
+          console.error("Supabase reject err:", e);
+        }
+      }
+      showToast(`[\${name}] 학생의 요청이 거절되었습니다.`);
+      await fetchAdminRequests();
     }
 
     // Init
