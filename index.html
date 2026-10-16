@@ -2426,33 +2426,42 @@
         const isPending = (r.status || 'pending') === 'pending';
         const dateStr = r.created_at ? new Date(r.created_at).toLocaleString() : '';
 
+        let statusBadge = '';
+        if (isPending) {
+          statusBadge = '<span class="px-2 py-0.5 rounded-pill bg-blue-100 text-blue-700 font-bold text-[10px]">대기중</span>';
+        } else if (r.status === 'approved') {
+          statusBadge = '<span class="px-2 py-0.5 rounded-pill bg-emerald-100 text-emerald-800 font-bold text-[10px]">승인완료</span>';
+        } else {
+          statusBadge = '<span class="px-2 py-0.5 rounded-pill bg-neutral-200 text-text-muted font-bold text-[10px]">거절됨</span>';
+        }
+
+        let actionButtons = '';
+        if (isPending) {
+          actionButtons = `
+            <div class="flex items-center justify-end gap-2 pt-1 border-t border-hairline-soft">
+              <button onclick="adminRejectRequest('${r.id}', '${r.name}')" class="px-3 py-1 rounded-pill bg-white hover:bg-neutral-100 border border-hairline text-text-muted text-[11px] font-semibold transition-all">
+                거절
+              </button>
+              <button onclick="adminApproveRequest('${r.id}', '${r.name}', '${r.relation}')" class="px-3.5 py-1 rounded-pill bg-ink hover:bg-[#262626] text-white text-[11px] font-semibold transition-all">
+                ✅ 승인 및 계정 생성
+              </button>
+            </div>
+          `;
+        }
+
         html += `
           <div class="bg-canvas-soft border border-hairline rounded-tile p-3.5 flex flex-col gap-2 text-xs">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
                 <span class="font-bold text-ink sm:text-sm">${r.name}</span>
-                \${isPending 
-                  ? '<span class="px-2 py-0.5 rounded-pill bg-blue-100 text-blue-700 font-bold text-[10px]">대기중</span>' 
-                  : (r.status === 'approved' 
-                    ? '<span class="px-2 py-0.5 rounded-pill bg-emerald-100 text-emerald-800 font-bold text-[10px]">승인완료</span>'
-                    : '<span class="px-2 py-0.5 rounded-pill bg-neutral-200 text-text-muted font-bold text-[10px]">거절됨</span>')
-                }
+                ${statusBadge}
               </div>
-              <span class="text-text-muted text-[10px]">\${dateStr}</span>
+              <span class="text-text-muted text-[10px]">${dateStr}</span>
             </div>
             <div class="bg-white border border-hairline p-2.5 rounded-tile text-text-muted leading-relaxed">
-              <strong>개발자와의 관계:</strong> \${r.relation || '미기재'}
+              <strong>개발자와의 관계:</strong> ${r.relation || '미기재'}
             </div>
-            \${isPending ? `
-              <div class="flex items-center justify-end gap-2 pt-1 border-t border-hairline-soft">
-                <button onclick="adminRejectRequest(\${r.id}, '\${r.name}')" class="px-3 py-1 rounded-pill bg-white hover:bg-neutral-100 border border-hairline text-text-muted text-[11px] font-semibold transition-all">
-                  거절
-                </button>
-                <button onclick="adminApproveRequest(\${r.id}, '\${r.name}', '\${r.relation}')" class="px-3.5 py-1 rounded-pill bg-ink hover:bg-[#262626] text-white text-[11px] font-semibold transition-all">
-                  ✅ 승인 및 계정 생성
-                </button>
-              </div>
-            ` : ''}
+            ${actionButtons}
           </div>
         `;
       });
