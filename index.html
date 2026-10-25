@@ -832,9 +832,9 @@
       <div class="flex flex-col gap-3 text-xs">
         <div>
           <label class="block font-medium text-text-muted mb-1">
-            요청자 <span class="text-[11px] font-normal text-text-faint">(선택 / 미입력 시 로그인 계정으로 자동 접수)</span>
+            요청자 <span class="text-[11px] font-normal text-text-faint">(로그인 계정으로 고정됩니다)</span>
           </label>
-          <input type="text" id="req-name" placeholder="미입력 시 로그인된 계정 이름으로 자동 전송됩니다" class="w-full bg-field border border-transparent rounded-tile px-3.5 py-2.5 text-xs text-ink placeholder-text-faint focus:ring-2 focus:ring-ink focus:bg-white outline-none" />
+          <input type="text" id="req-name" readonly disabled class="w-full bg-[#f0f0f0] border border-hairline rounded-tile px-3.5 py-2.5 text-xs text-ink font-semibold outline-none cursor-not-allowed select-none" />
         </div>
 
         <div>
@@ -1595,10 +1595,10 @@
     function openRequestModal(defaultTitle = '') {
       try {
         const user = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
-        const savedName = localStorage.getItem('suneung_requester_name') || (user ? user.username : '');
+        const loggedName = user ? (user.name || user.username) : '익명';
         const nameEl = document.getElementById('req-name');
         if (nameEl) {
-          nameEl.value = savedName || (user ? user.username : '');
+          nameEl.value = loggedName;
         }
       } catch(e) {}
       document.getElementById('req-title').value = defaultTitle;
@@ -1611,10 +1611,7 @@
     }
     function submitRequest() {
       const user = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
-      let name = (document.getElementById('req-name')?.value || '').trim();
-      if (!name) {
-        name = (user && user.username) ? user.username : '익명';
-      }
+      const name = user ? (user.name || user.username) : '익명';
       const subj = document.getElementById('req-subject').value;
       const title = document.getElementById('req-title').value.trim();
       const round = document.getElementById('req-round').value.trim();
