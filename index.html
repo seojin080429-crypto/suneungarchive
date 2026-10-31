@@ -1411,6 +1411,9 @@
         localStorage.setItem(getStudyDataKey(), JSON.stringify(data));
       } catch(e) {}
       updateBookmarkBadges();
+      if (typeof pushStudyDataToCloud === 'function') {
+        pushStudyDataToCloud(data);
+      }
     }
 
     function isItemBookmarked(bookmarks, item) {
@@ -2733,6 +2736,148 @@
     const STORAGE_KEY_AUTH_USER = 'seoarch_current_user';
     const STORAGE_KEY_LOCAL_USERS = 'seoarch_local_users_db';
 
+    // ==========================================
+    // STUDY DATA CLOUD SYNC (Bookmarks & Solved)
+    // ==========================================
+    let studySyncDebounceTimer = null;
+
+    function pushStudyDataToCloud(data) {
+      const user = getCurrentUser();
+      const username = user?.username;
+      if (!supabaseClient || !username || username === 'guest') return;
+      if (studySyncDebounceTimer) clearTimeout(studySyncDebounceTimer);
+      studySyncDebounceTimer = setTimeout(async () => {
+        try {
+          const nowIso = new Date().toISOString();
+          data.updated_at = nowIso;
+          try {
+            localStorage.setItem(getStudyDataKey(), JSON.stringify(data));
+          } catch(e) {}
+
+          const payloadMessages = [{
+            bookmarks: (data && data.bookmarks) ? data.bookmarks : {},
+            solved: (data && data.solved) ? data.solved : {},
+            updated_at: nowIso
+          }];
+
+          const { data: existing, error: selectErr } = await supabaseClient
+            .from('account_requests')
+            .select('id')
+            .eq('relation', 'study_data')
+            .eq('name', username)
+            .limit(1);
+
+          if (!selectErr && existing && existing.length > 0) {
+            await supabaseClient
+              .from('account_requests')
+              .update({
+                messages: payloadMessages,
+                status: 'synced'
+              })
+              .eq('id', existing[0].id);
+          } else {
+            await supabaseClient
+              .from('account_requests')
+              .insert([{
+                name: username,
+                contact: 'study_data_sync',
+                relation: 'study_data',
+                status: 'synced',
+                messages: payloadMessages
+              }]);
+          }
+        } catch(e) {
+          console.warn("Cloud study data push error:", e);
+        }
+      }, 500);
+    }
+
+    async function syncStudyDataFromCloud(username) {
+      if (!supabaseClient || !username || username === 'guest') return;
+      try {
+        const { data: records, error } = await supabaseClient
+          .from('account_requests')
+          .select('*')
+          .eq('relation', 'study_data')
+          .eq('name', username)
+          .limit(1);
+
+        if (error) {
+          console.warn("Cloud study data sync fetch err:", error);
+          return;
+        }
+
+        const localData = getStudyData();
+
+        if (!records || records.length === 0) {
+          if (Object.keys(localData.bookmarks || {}).length > 0 || Object.keys(localData.solved || {}).length > 0) {
+            pushStudyDataToCloud(localData);
+          }
+          return;
+        }
+
+        const cloudRecord = records[0];
+        const cloudPayload = (Array.isArray(cloudRecord.messages) && cloudRecord.messages[0]) ? cloudRecord.messages[0] : (cloudRecord.messages || {});
+        let cloudBookmarks = cloudPayload.bookmarks || {};
+        let cloudSolved = cloudPayload.solved || {};
+        const cloudUpdatedAt = cloudPayload.updated_at ? new Date(cloudPayload.updated_at).getTime() : 0;
+        const localUpdatedAt = localData.updated_at ? new Date(localData.updated_at).getTime() : 0;
+
+        // If local has no updated_at, perform initial union merge
+        if (!localData.updated_at) {
+          if (!localData.bookmarks) localData.bookmarks = {};
+          if (!localData.solved) localData.solved = {};
+
+          for (const [k, v] of Object.entries(cloudBookmarks)) {
+            if (!localData.bookmarks[k]) localData.bookmarks[k] = v;
+          }
+          for (const [k, v] of Object.entries(cloudSolved)) {
+            if (v && !localData.solved[k]) localData.solved[k] = v;
+          }
+          localData.updated_at = cloudPayload.updated_at || new Date().toISOString();
+          try {
+            localStorage.setItem(getStudyDataKey(), JSON.stringify(localData));
+          } catch(e) {}
+          updateBookmarkBadges();
+          if (typeof render === 'function') render();
+          pushStudyDataToCloud(localData);
+          return;
+        }
+
+        if (cloudUpdatedAt > localUpdatedAt) {
+          let offlineAdded = false;
+          if (!cloudSolved) cloudSolved = {};
+          for (const [k, v] of Object.entries(localData.solved || {})) {
+            if (v && !cloudSolved[k]) {
+              cloudSolved[k] = v;
+              offlineAdded = true;
+            }
+          }
+          if (!cloudBookmarks) cloudBookmarks = {};
+          for (const [k, v] of Object.entries(localData.bookmarks || {})) {
+            if (!cloudBookmarks[k]) {
+              cloudBookmarks[k] = v;
+              offlineAdded = true;
+            }
+          }
+
+          localData.bookmarks = cloudBookmarks;
+          localData.solved = cloudSolved;
+          localData.updated_at = offlineAdded ? new Date().toISOString() : cloudPayload.updated_at;
+          try {
+            localStorage.setItem(getStudyDataKey(), JSON.stringify(localData));
+          } catch(e) {}
+          updateBookmarkBadges();
+          if (typeof render === 'function') render();
+          if (offlineAdded) pushStudyDataToCloud(localData);
+        } else if (localUpdatedAt > cloudUpdatedAt) {
+          pushStudyDataToCloud(localData);
+        }
+      } catch(e) {
+        console.warn("Cloud study data sync error:", e);
+      }
+    }
+
     function initLocalUsersDb() {
       let db = {};
       try {
@@ -2797,6 +2942,11 @@
           const pwModal = document.getElementById('modal-change-password');
           if (pwModal) pwModal.classList.add('hidden');
           document.body.classList.remove('overflow-hidden');
+        }
+
+        // Sync study data (solved & bookmarks) from cloud
+        if (typeof syncStudyDataFromCloud === 'function' && user.username && user.username !== 'guest') {
+          syncStudyDataFromCloud(user.username);
         }
       }
       if (typeof updateBookmarkBadges === 'function') {
@@ -3047,6 +3197,7 @@
             .from('account_requests')
             .select('*')
             .eq('name', name)
+            .neq('relation', 'study_data')
             .order('created_at', { ascending: false })
             .limit(1);
           if (!error && data && data.length > 0) req = data[0];
@@ -3054,7 +3205,7 @@
       }
       if (!req) {
         const local = getLocalAccountRequests();
-        req = local.find(r => r.name === name) || null;
+        req = local.find(r => r.name === name && r.relation !== 'study_data') || null;
       }
 
       if (!req) {
@@ -3807,6 +3958,7 @@
           const { data, error } = await supabaseClient
             .from('account_requests')
             .select('*')
+            .neq('relation', 'study_data')
             .order('created_at', { ascending: false });
           if (!error && data) {
             reqs = data;
@@ -3817,7 +3969,9 @@
       }
 
       if (reqs.length === 0) {
-        reqs = getLocalAccountRequests();
+        reqs = getLocalAccountRequests().filter(r => r.relation !== 'study_data');
+      } else {
+        reqs = reqs.filter(r => r.relation !== 'study_data');
       }
 
       cachedAdminRequests = reqs;
@@ -4099,6 +4253,22 @@
       showToast("신청 내역이 삭제되었습니다.");
       await fetchAdminRequests();
     }
+
+    // Auto sync on tab refocus / visibility change
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        const u = getCurrentUser();
+        if (u && u.username && u.username !== 'guest') {
+          syncStudyDataFromCloud(u.username);
+        }
+      }
+    });
+    window.addEventListener('focus', () => {
+      const u = getCurrentUser();
+      if (u && u.username && u.username !== 'guest') {
+        syncStudyDataFromCloud(u.username);
+      }
+    });
 
     // Init
     initLocalUsersDb();
