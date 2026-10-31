@@ -556,9 +556,9 @@
       <div class="w-12 h-12 rounded-pill bg-canvas-soft flex items-center justify-center mb-3 text-ink">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
       </div>
-      <p class="text-base font-semibold text-ink">일치하는 수험자료가 없습니다.</p>
-      <p class="text-xs text-text-muted mt-1 max-w-sm">검색어 철자를 확인하거나 필터를 전체보기로 전환해 보세요.</p>
-      <button onclick="openRequestModal(currentSearchText)" class="mt-4 px-4 py-2 bg-ink hover:bg-[#262626] text-white rounded-pill text-xs font-semibold transition-colors">
+      <p id="empty-state-title" class="text-base font-semibold text-ink">일치하는 수험자료가 없습니다.</p>
+      <p id="empty-state-desc" class="text-xs text-text-muted mt-1 max-w-sm">검색어 철자를 확인하거나 필터를 전체보기로 전환해 보세요.</p>
+      <button id="empty-state-btn" onclick="openRequestModal(currentSearchText)" class="mt-4 px-4 py-2 bg-ink hover:bg-[#262626] text-white rounded-pill text-xs font-semibold transition-colors">
         이 자료 요청하기
       </button>
     </div>
@@ -1336,12 +1336,74 @@
     }
 
     function getStudyData() {
+      const key = getStudyDataKey();
+      let data = { bookmarks: {}, solved: {} };
       try {
-        const raw = localStorage.getItem(getStudyDataKey());
-        return raw ? JSON.parse(raw) : { bookmarks: {}, solved: {} };
-      } catch(e) {
-        return { bookmarks: {}, solved: {} };
+        const raw = localStorage.getItem(key);
+        if (raw) {
+          data = JSON.parse(raw);
+          if (!data.bookmarks) data.bookmarks = {};
+          if (!data.solved) data.solved = {};
+        }
+      } catch(e) {}
+
+      // MIGRATION & RECOVERY:
+      // If user is logged in, check if guest or legacy data exists and merge it
+      const user = getCurrentUser();
+      if (user && user.username) {
+        let needSave = false;
+        try {
+          const guestRaw = localStorage.getItem('SEOARCH_STUDY_DATA_guest');
+          if (guestRaw) {
+            const guestData = JSON.parse(guestRaw);
+            if (guestData && guestData.bookmarks) {
+              for (const [k, v] of Object.entries(guestData.bookmarks)) {
+                if (!data.bookmarks[k]) {
+                  data.bookmarks[k] = v;
+                  needSave = true;
+                }
+              }
+            }
+            if (guestData && guestData.solved) {
+              for (const [k, v] of Object.entries(guestData.solved)) {
+                if (!data.solved[k]) {
+                  data.solved[k] = v;
+                  needSave = true;
+                }
+              }
+            }
+          }
+        } catch(e) {}
+
+        try {
+          const legacyRaw = localStorage.getItem('SEOARCH_STUDY_DATA');
+          if (legacyRaw) {
+            const legData = JSON.parse(legacyRaw);
+            if (legData && legData.bookmarks) {
+              for (const [k, v] of Object.entries(legData.bookmarks)) {
+                if (!data.bookmarks[k]) {
+                  data.bookmarks[k] = v;
+                  needSave = true;
+                }
+              }
+            }
+            if (legData && legData.solved) {
+              for (const [k, v] of Object.entries(legData.solved)) {
+                if (!data.solved[k]) {
+                  data.solved[k] = v;
+                  needSave = true;
+                }
+              }
+            }
+          }
+        } catch(e) {}
+
+        if (needSave) {
+          try { localStorage.setItem(key, JSON.stringify(data)); } catch(e) {}
+        }
       }
+
+      return data;
     }
 
     function saveStudyData(data) {
@@ -1351,9 +1413,26 @@
       updateBookmarkBadges();
     }
 
+    function isItemBookmarked(bookmarks, item) {
+      if (!bookmarks || !item) return false;
+      return Boolean(
+        (item.id && bookmarks[item.id]) ||
+        (item.n && bookmarks[item.n]) ||
+        (item.p && bookmarks[item.p])
+      );
+    }
+
+    function getItemBookmarkInfo(bookmarks, item) {
+      if (!bookmarks || !item) return null;
+      return (item.id && bookmarks[item.id]) ||
+             (item.n && bookmarks[item.n]) ||
+             (item.p && bookmarks[item.p]) || null;
+    }
+
     function updateBookmarkBadges() {
       const data = getStudyData();
-      const bCount = Object.keys(data.bookmarks || {}).length;
+      const matchedItems = CATALOG.filter(it => isItemBookmarked(data.bookmarks, it));
+      const bCount = Math.max(matchedItems.length, Object.keys(data.bookmarks || {}).length);
       const badge = document.getElementById('badge-bookmark-count');
       if (badge) badge.textContent = bCount.toLocaleString();
       const bannerCount = document.getElementById('bookmark-banner-count');
@@ -1363,35 +1442,97 @@
     function toggleSolved(key, title) {
       const data = getStudyData();
       if (!data.solved) data.solved = {};
-      if (data.solved[key]) {
+      const item = CATALOG.find(x => (x.id && x.id === key) || x.n === key || x.p === key || x.n === title);
+      const idKey = item ? item.id : null;
+      const nameKey = item ? item.n : title;
+      const pathKey = item ? item.p : null;
+
+      const isCurrentSolved = Boolean(
+        (idKey && data.solved[idKey]) ||
+        (nameKey && data.solved[nameKey]) ||
+        (pathKey && data.solved[pathKey]) ||
+        data.solved[key]
+      );
+
+      if (isCurrentSolved) {
+        if (idKey) delete data.solved[idKey];
+        if (nameKey) delete data.solved[nameKey];
+        if (pathKey) delete data.solved[pathKey];
         delete data.solved[key];
-        showToast("'" + title.slice(0, 20) + "...' 풀이 완료를 취소했습니다.");
+        showToast("'" + (title || nameKey || '').slice(0, 20) + "...' 풀이 완료를 취소했습니다.");
       } else {
-        data.solved[key] = { solvedAt: Date.now() };
-        showToast("'" + title.slice(0, 20) + "...' 풀이 완료로 표시했습니다! ✅");
+        const entry = { solvedAt: Date.now() };
+        const primary = idKey || nameKey || key;
+        data.solved[primary] = entry;
+        if (nameKey && nameKey !== primary) data.solved[nameKey] = entry;
+        showToast("'" + (title || nameKey || '').slice(0, 20) + "...' 풀이 완료로 표시했습니다! ✅");
       }
       saveStudyData(data);
-      handleSearch();
+      const hideSolved = Boolean(document.getElementById('hide-solved-checkbox')?.checked);
+      if (hideSolved) {
+        const savedPage = currentPage;
+        handleSearch();
+        const totalPages = Math.ceil(filteredList.length / PAGE_SIZE) || 1;
+        currentPage = Math.max(1, Math.min(savedPage, totalPages));
+        render();
+      } else {
+        render();
+      }
     }
 
     function toggleBookmark(key, title) {
       const data = getStudyData();
       if (!data.bookmarks) data.bookmarks = {};
-      if (data.bookmarks[key]) {
+      const item = CATALOG.find(x => (x.id && x.id === key) || x.n === key || x.p === key || x.n === title);
+      const idKey = item ? item.id : null;
+      const nameKey = item ? item.n : title;
+      const pathKey = item ? item.p : null;
+
+      const isCurrent = Boolean(
+        (idKey && data.bookmarks[idKey]) ||
+        (nameKey && data.bookmarks[nameKey]) ||
+        (pathKey && data.bookmarks[pathKey]) ||
+        data.bookmarks[key]
+      );
+
+      if (isCurrent) {
+        if (idKey) delete data.bookmarks[idKey];
+        if (nameKey) delete data.bookmarks[nameKey];
+        if (pathKey) delete data.bookmarks[pathKey];
         delete data.bookmarks[key];
-        showToast("'" + title.slice(0, 20) + "...' 출력 리스트에서 제외했습니다.");
+        showToast("'" + (title || nameKey || '').slice(0, 20) + "...' 출력 리스트에서 제외했습니다.");
       } else {
-        data.bookmarks[key] = { addedAt: Date.now(), memo: '' };
-        showToast("'" + title.slice(0, 20) + "...' 출력 리스트(찜)에 담았습니다! ⭐");
+        const entry = {
+          addedAt: Date.now(),
+          memo: '',
+          title: nameKey,
+          id: idKey,
+          path: pathKey
+        };
+        const primary = idKey || nameKey || key;
+        data.bookmarks[primary] = entry;
+        if (nameKey && nameKey !== primary) {
+          data.bookmarks[nameKey] = entry;
+        }
+        showToast("'" + (title || nameKey || '').slice(0, 20) + "...' 출력 리스트(찜)에 담았습니다! ⭐");
       }
       saveStudyData(data);
-      handleSearch();
+      if (showOnlyBookmarks) {
+        const savedPage = currentPage;
+        handleSearch();
+        const totalPages = Math.ceil(filteredList.length / PAGE_SIZE) || 1;
+        currentPage = Math.max(1, Math.min(savedPage, totalPages));
+        render();
+      } else {
+        render();
+      }
     }
 
     function openMemoModal(key, title) {
       currentMemoItemKey = key;
       const data = getStudyData();
-      const bm = (data.bookmarks && data.bookmarks[key]) ? data.bookmarks[key] : {};
+      const item = CATALOG.find(x => (x.id && x.id === key) || x.n === key || x.p === key || x.n === title);
+      const bm = item ? (getItemBookmarkInfo(data.bookmarks, item) || {}) : (data.bookmarks[key] || {});
       const currentMemo = bm.memo || '';
 
       const modal = document.getElementById('modal-bookmark-memo');
@@ -1419,32 +1560,69 @@
 
       const data = getStudyData();
       if (!data.bookmarks) data.bookmarks = {};
-      if (!data.bookmarks[currentMemoItemKey]) {
-        data.bookmarks[currentMemoItemKey] = { addedAt: Date.now() };
-      }
-      data.bookmarks[currentMemoItemKey].memo = memoText;
+      const item = CATALOG.find(x => (x.id && x.id === currentMemoItemKey) || x.n === currentMemoItemKey || x.p === currentMemoItemKey);
+      const idKey = item ? item.id : null;
+      const nameKey = item ? item.n : currentMemoItemKey;
+
+      const entry = (item ? getItemBookmarkInfo(data.bookmarks, item) : null) || { addedAt: Date.now() };
+      entry.memo = memoText;
+
+      if (idKey) data.bookmarks[idKey] = entry;
+      if (nameKey) data.bookmarks[nameKey] = entry;
+      data.bookmarks[currentMemoItemKey] = entry;
+
       saveStudyData(data);
       closeMemoModal();
       showToast("출력 및 학습 메모가 저장되었습니다. 📝");
-      handleSearch();
+      render();
     }
 
     function deleteBookmarkMemo() {
       if (!currentMemoItemKey) return;
       const data = getStudyData();
-      if (data.bookmarks && data.bookmarks[currentMemoItemKey]) {
-        data.bookmarks[currentMemoItemKey].memo = '';
-        saveStudyData(data);
-      }
+      const item = CATALOG.find(x => (x.id && x.id === currentMemoItemKey) || x.n === currentMemoItemKey || x.p === currentMemoItemKey);
+      const idKey = item ? item.id : null;
+      const nameKey = item ? item.n : currentMemoItemKey;
+
+      if (idKey && data.bookmarks[idKey]) data.bookmarks[idKey].memo = '';
+      if (nameKey && data.bookmarks[nameKey]) data.bookmarks[nameKey].memo = '';
+      if (data.bookmarks[currentMemoItemKey]) data.bookmarks[currentMemoItemKey].memo = '';
+
+      saveStudyData(data);
       closeMemoModal();
       showToast("메모가 삭제되었습니다.");
-      handleSearch();
+      render();
     }
 
     function toggleBookmarksOnly() {
       showOnlyBookmarks = !showOnlyBookmarks;
       const btn = document.getElementById('btn-show-bookmarks');
       const banner = document.getElementById('bookmarks-active-banner');
+
+      if (showOnlyBookmarks) {
+        // Reset category, subsubject, and search filters so ALL bookmarked items are visible immediately!
+        currentCategory = 'ALL';
+        currentSubSubject = 'ALL';
+        resetButtonStyles();
+        const btnAll = document.getElementById('btn-all');
+        if (btnAll) {
+          btnAll.classList.remove('bg-canvas-soft', 'text-text-muted');
+          btnAll.classList.add('bg-ink', 'text-white');
+        }
+        const searchInput = document.getElementById('search-input');
+        if (searchInput) searchInput.value = '';
+        currentSearchText = '';
+        currentSearchTerms = [];
+        
+        const typeSelect = document.getElementById('type-select');
+        const gubunSelect = document.getElementById('gubun-select');
+        const brandSelect = document.getElementById('brand-select');
+        const yearSelect = document.getElementById('year-select');
+        if (typeSelect) typeSelect.value = 'ALL';
+        if (gubunSelect) gubunSelect.value = 'ALL';
+        if (brandSelect) brandSelect.value = 'ALL';
+        if (yearSelect) yearSelect.value = 'ALL';
+      }
 
       if (btn) {
         if (showOnlyBookmarks) {
@@ -1464,34 +1642,24 @@
 
     function copyAllBookmarkLinks() {
       const data = getStudyData();
-      const bookmarkedKeys = new Set(Object.keys(data.bookmarks || {}));
-      if (bookmarkedKeys.size === 0) {
+      const items = CATALOG.filter(it => isItemBookmarked(data.bookmarks, it));
+      if (items.length === 0) {
         showToast("출력할 거 리스트에 담긴 자료가 없습니다.");
         return;
       }
 
-      const items = CATALOG.filter(it => bookmarkedKeys.has(it.id || it.n));
       let text = `[SEOARCH 2027 수능자료 출력할 거 리스트 - 총 ${items.length}편]\n\n`;
       items.forEach((it, idx) => {
-        const bm = data.bookmarks[it.id || it.n] || {};
+        const bm = getItemBookmarkInfo(data.bookmarks, it) || {};
         const memo = bm.memo ? ` (메모: ${bm.memo})` : '';
         const link = it.id ? `https://drive.google.com/file/d/${it.id}/view?usp=sharing` : '(구글 드라이브 동기화 대기)';
-        text += `${idx + 1}. [${it.y}] ${it.n}${memo}\n   ${link}\n\n`;
+        text += `${idx + 1}. [${it.c} - ${it.ds}] ${it.n} (${it.s} MB)\n`;
+        text += `   - 링크: ${link}${memo}\n\n`;
       });
 
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(() => {
-          showToast(`출력 리스트 ${items.length}개의 제목 및 링크를 모두 복사했습니다! 📋`);
-        });
-      } else {
-        const ta = document.createElement('textarea');
-        ta.value = text;
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        document.body.removeChild(ta);
-        showToast(`출력 리스트 ${items.length}개의 제목 및 링크를 모두 복사했습니다! 📋`);
-      }
+      copyToClipboard(text, () => {
+        showToast(`📋 총 ${items.length}개 자료의 링크가 복사되었습니다!`);
+      });
     }
 
     function escapeHtml(str) {
@@ -1706,9 +1874,8 @@
       updateBookmarkBadges();
 
       filteredList = CATALOG.filter(item => {
-        const itemKey = item.id || item.n;
-        const isSolved = Boolean(studyData.solved && studyData.solved[itemKey]);
-        const isBookmarked = Boolean(studyData.bookmarks && studyData.bookmarks[itemKey]);
+        const isSolved = Boolean(studyData.solved && (studyData.solved[item.id] || studyData.solved[item.n] || studyData.solved[item.p]));
+        const isBookmarked = isItemBookmarked(studyData.bookmarks, item);
 
         // 1. 푼 거 안보기 필터
         if (hideSolved && isSolved) return false;
@@ -1790,8 +1957,8 @@
           if (diff !== 0) return diff;
           return a.n.localeCompare(b.n, 'ko', { numeric: true });
         } else if (sortOrder === 'BOOKMARK_FIRST') {
-          const isBmA = Boolean(studyData.bookmarks && studyData.bookmarks[a.id || a.n]);
-          const isBmB = Boolean(studyData.bookmarks && studyData.bookmarks[b.id || b.n]);
+          const isBmA = isItemBookmarked(studyData.bookmarks, a);
+          const isBmB = isItemBookmarked(studyData.bookmarks, b);
           if (isBmA !== isBmB) return isBmA ? -1 : 1;
           const diff = (b.mt || 0) - (a.mt || 0);
           if (diff !== 0) return diff;
@@ -1873,6 +2040,49 @@
         emptyState.classList.remove('hidden');
         emptyState.classList.add('flex');
         document.getElementById('pagination-wrapper').classList.add('hidden');
+
+        const studyData = getStudyData();
+        const bCount = Object.keys(studyData.bookmarks || {}).length;
+        const emptyTitle = document.getElementById('empty-state-title');
+        const emptyDesc = document.getElementById('empty-state-desc');
+        const emptyBtn = document.getElementById('empty-state-btn');
+
+        if (showOnlyBookmarks) {
+          if (bCount === 0) {
+            if (emptyTitle) emptyTitle.textContent = "출력 리스트(찜)에 담긴 자료가 없습니다.";
+            if (emptyDesc) emptyDesc.textContent = "원하는 모의고사 카드에서 [☆ 찜] 버튼을 눌러 인쇄 목록에 담아보세요!";
+            if (emptyBtn) {
+              emptyBtn.textContent = "전체 자료 보러가기";
+              emptyBtn.onclick = () => toggleBookmarksOnly();
+            }
+          } else {
+            if (emptyTitle) emptyTitle.textContent = "선택한 조건에 일치하는 찜 자료가 없습니다.";
+            if (emptyDesc) emptyDesc.textContent = `현재 총 ${bCount}개의 자료가 찜 목록에 있습니다. 필터를 초기화하여 전체 찜 목록을 확인해보세요.`;
+            if (emptyBtn) {
+              emptyBtn.textContent = `전체 찜 자료 보기 (${bCount}개)`;
+              emptyBtn.onclick = () => {
+                currentCategory = 'ALL';
+                currentSubSubject = 'ALL';
+                resetButtonStyles();
+                const btnAll = document.getElementById('btn-all');
+                if (btnAll) { btnAll.classList.remove('bg-canvas-soft', 'text-text-muted'); btnAll.classList.add('bg-ink', 'text-white'); }
+                document.getElementById('search-input').value = '';
+                document.getElementById('type-select').value = 'ALL';
+                document.getElementById('gubun-select').value = 'ALL';
+                document.getElementById('brand-select').value = 'ALL';
+                document.getElementById('year-select').value = 'ALL';
+                handleSearch();
+              };
+            }
+          }
+        } else {
+          if (emptyTitle) emptyTitle.textContent = "일치하는 수험자료가 없습니다.";
+          if (emptyDesc) emptyDesc.textContent = "검색어 철자를 확인하거나 필터를 전체보기로 전환해 보세요.";
+          if (emptyBtn) {
+            emptyBtn.textContent = "이 자료 요청하기";
+            emptyBtn.onclick = () => openRequestModal(currentSearchText);
+          }
+        }
         return;
       }
 
@@ -1896,8 +2106,8 @@
 
       pageItems.forEach(item => {
         const itemKey = item.id || item.n;
-        const isSolved = Boolean(studyData.solved && studyData.solved[itemKey]);
-        const bookmarkInfo = (studyData.bookmarks && studyData.bookmarks[itemKey]) ? studyData.bookmarks[itemKey] : null;
+        const isSolved = Boolean(studyData.solved && (studyData.solved[item.id] || studyData.solved[item.n] || studyData.solved[item.p] || studyData.solved[itemKey]));
+        const bookmarkInfo = getItemBookmarkInfo(studyData.bookmarks, item);
         const isBookmarked = Boolean(bookmarkInfo);
         const memoText = bookmarkInfo ? (bookmarkInfo.memo || '') : '';
         const driveViewUrl = item.id ? `https://drive.google.com/file/d/${item.id}/view?usp=sharing` : '';
@@ -2588,6 +2798,9 @@
           if (pwModal) pwModal.classList.add('hidden');
           document.body.classList.remove('overflow-hidden');
         }
+      }
+      if (typeof updateBookmarkBadges === 'function') {
+        updateBookmarkBadges();
       }
       if (typeof render === 'function') {
         render();
